@@ -6,15 +6,25 @@ Class StockBackbone - methods:
     receive_PO
     make_SO
     issue_SO
+
+    create_supplier
+    create customer
+    create_sku
+    first_time_setup
 """
 
-import sbb_admin
+from sbb import db_admin
 
 
-class StockBackbone(sbb_admin.StockBackbone_Admin):
+class StockBackbone():
 
-    def __init__(self):
-        pass
+    def __init__(self, db_name):
+        self.db = db_admin.SBB_DBAdmin(db_name)
+
+
+    ##############################
+    ########## Regular use #######
+    ##############################
 
     def make_PO(self, supplier_id: str, PO_lines: dict) -> str:
         pass
@@ -26,5 +36,19 @@ class StockBackbone(sbb_admin.StockBackbone_Admin):
         pass
 
     def issue_SO(self, SO_id: str) -> bool:
+        pass
+
+
+    ##############################
+    ########## Configuration #####
+    ##############################
+
+    def create_supplier(self, supplier_name: str) -> str:
+        pass
+
+    def create_customer(self, customer_name: str) -> str:
+        pass
+
+    def create_sku(self, sku_desc: str) -> str:
         pass
 
