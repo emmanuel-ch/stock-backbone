@@ -7,32 +7,25 @@ from pathlib import Path
 from sbb import db_admin
 
 
-def test_create_db_and_close_connection():
+@pytest.fixture
+def create_dummy_db():
     db_name = 'test_db'
     new_db = db_admin.SBB_DBAdmin(db_name)
     db_path = Path('data') / (db_name + '.db')
 
-    test_db_exists = db_path.is_file()
+    yield (new_db, db_path)
 
     new_db.close_connection()
     db_path.unlink()
 
-    assert test_db_exists
+
+def test_create_db_and_close_connection2(create_dummy_db):
+    assert create_dummy_db[1].is_file()
 
 
-def test_missing_table():
-    db_name = 'test_db'
-    new_db = db_admin.SBB_DBAdmin(db_name)
-    db_path = Path('data') / (db_name + '.db')
-
-    new_db.con.execute("DROP TABLE inventory;")
-
-    test_not_detect_missing_table = new_db.is_db_setup()
-
-    new_db.close_connection()
-    db_path.unlink()
-
-    assert test_not_detect_missing_table is False
+def test_missing_table(create_dummy_db):
+    create_dummy_db[0].con.execute("DROP TABLE inventory;")
+    assert create_dummy_db[0].is_db_setup() is False
 
 
 # def test_add_PO():
