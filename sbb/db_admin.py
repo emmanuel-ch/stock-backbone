@@ -15,11 +15,21 @@ Class SBB_DBAdmin - methods:
     first_time_setup
 """
 
+import sqlite3
+
+
+
+DB_TABLES = ['purchase_order', 'po_line', 'sale_order', 'so_line', 'product', 'inventory']
+
 
 class SBB_DBAdmin():
 
-    def __init__(self):
-        pass
+    def __init__(self, db_name):
+        self.con = sqlite3.connect(f'data/{db_name}.db')
+        
+        if not self.is_db_setup():
+            self.setup_db()
+        
     
     ##############################
     ########## Regular use #######
@@ -45,7 +55,7 @@ class SBB_DBAdmin():
 
 
     ##############################
-    ########## Setup use #########
+    ########## Configuration #####
     ##############################
 
     def add_supplier(self, supplier_name: str) -> str:
@@ -60,3 +70,70 @@ class SBB_DBAdmin():
     def first_time_setup(self) -> bool:
         pass
 
+
+    ##############################
+    ########## Setup #############
+    ##############################
+
+    def close_connection(self):
+        self.con.close()
+
+    def is_db_setup(self):
+        res = self.con.execute('SELECT name FROM sqlite_master').fetchall()
+        list_tables = [item[0] for item in res]
+        return all([expected_table in list_tables for expected_table in DB_TABLES])
+    
+    def setup_db(self):
+        # Purchase orders
+        self.con.execute("""
+CREATE TABLE IF NOT EXISTS purchase_order (
+                         id INTEGER PRIMARY KEY,
+                         supplier_id INTEGER NOT NULL
+);
+""")
+        
+        # Purchase order lines
+        self.con.execute("""
+CREATE TABLE IF NOT EXISTS po_line (
+                         id INTEGER PRIMARY KEY,
+                         po_id INTEGER NOT NULL,
+                         sku INTEGER NOT NULL,
+                         qty_ordered INTEGER NOT NULL,
+                         qty_delivered INTEGER NOT NULL
+);
+""")
+        
+        # Sale orders
+        self.con.execute("""
+CREATE TABLE IF NOT EXISTS sale_order (
+                         id INTEGER PRIMARY KEY,
+                         customer_id INTEGER NOT NULL
+);
+""")
+        
+        # Purchase order lines
+        self.con.execute("""
+CREATE TABLE IF NOT EXISTS so_line (
+                         id INTEGER PRIMARY KEY,
+                         so_id INTEGER NOT NULL,
+                         sku INTEGER NOT NULL,
+                         qty_ordered INTEGER NOT NULL,
+                         qty_delivered INTEGER NOT NULL
+);
+""")
+        
+        # Products
+        self.con.execute("""
+CREATE TABLE IF NOT EXISTS product (
+                         sku INTEGER PRIMARY KEY,
+                         desc TEXT NOT NULL
+);
+""")
+        
+        # Inventory positions
+        self.con.execute("""
+CREATE TABLE IF NOT EXISTS inventory (
+                         sku INTEGER PRIMARY KEY,
+                         qty INTEGER NOT NULL
+);
+""")
