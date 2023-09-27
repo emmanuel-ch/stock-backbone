@@ -13,12 +13,17 @@ Class StockBackbone - methods:
     first_time_setup
 """
 
+import string
+
 from sbb import db_admin
+from sbb.exceptions import UserInputInvalid
 
 
 class StockBackbone():
 
     def __init__(self, db_name):
+        if not validate_text_input(db_name, 'db name'):
+            raise UserInputInvalid('Database name', db_name)
         self.db = db_admin.SBB_DBAdmin(db_name)
 
 
@@ -26,16 +31,16 @@ class StockBackbone():
     ########## Regular use #######
     ##############################
 
-    def make_PO(self, supplier_id: str, PO_lines: dict) -> str:
+    def make_PO(self, supplier_id: int, PO_lines: dict) -> int:
         pass
 
-    def receive_PO(self, PO_id: str) -> bool:
+    def receive_PO(self, PO_id: int) -> bool:
         pass
 
-    def make_SO(self, customer_id: str, SO_lines: dict) -> str:
+    def make_SO(self, customer_id: int, SO_lines: dict) -> int:
         pass
 
-    def issue_SO(self, SO_id: str) -> bool:
+    def issue_SO(self, SO_id: int) -> bool:
         pass
 
 
@@ -43,12 +48,34 @@ class StockBackbone():
     ########## Configuration #####
     ##############################
 
-    def create_supplier(self, supplier_name: str) -> str:
+    def create_supplier(self, supplier_name: str) -> int:
         pass
 
-    def create_customer(self, customer_name: str) -> str:
+    def create_customer(self, customer_name: str) -> int:
         pass
 
-    def create_sku(self, sku_desc: str) -> str:
-        pass
+    def create_sku(self, sku_desc: str) -> int:
+        if validate_text_input(sku_desc, 'sku desc'):
+            return self.db.add_sku(sku_desc)
+        else:
+            raise UserInputInvalid('SKU description', sku_desc)
+
+
+##############################
+########## Support ###########
+##############################
+
+def validate_text_input(value: str, input_type: str) -> bool:
+    match input_type:
+        case 'db name':
+            valid_chars = "_" + string.ascii_letters + string.digits
+            max_length = 30
+        case 'sku desc':
+            valid_chars = " -_.,()[]" + string.ascii_letters + string.digits
+            max_length = 30
+        case _:
+            return False
+    
+    acceptable_name = ''.join(char for char in value if char in valid_chars)
+    return (value == acceptable_name) and (len(value) > 0) and (len(value) <= max_length)
 
