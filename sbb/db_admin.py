@@ -26,6 +26,7 @@ class SBB_DBAdmin():
 
     def __init__(self, db_name):
         self.con = sqlite3.connect(f'data/{db_name}.db')
+        self.cur = self.con.cursor()
         
         if not self.is_db_setup():
             self.setup_db()
@@ -65,7 +66,16 @@ class SBB_DBAdmin():
         pass
 
     def add_sku(self, sku_desc: str) -> int:
-        pass
+        self.cur.execute("""
+                         INSERT INTO product (desc)
+                         VALUES
+                            (?)
+                         """,
+                         [(sku_desc)])
+        self.con.commit()
+
+        return self.cur.lastrowid
+        
 
 
     ##############################
@@ -76,13 +86,13 @@ class SBB_DBAdmin():
         self.con.close()
 
     def is_db_setup(self) -> bool:
-        res = self.con.execute('SELECT name FROM sqlite_master').fetchall()
+        res = self.cur.execute('SELECT name FROM sqlite_master').fetchall()
         list_tables = [item[0] for item in res]
         return all([expected_table in list_tables for expected_table in DB_TABLES])
     
     def setup_db(self) -> None:
         # Purchase orders
-        self.con.execute("""
+        self.cur.execute("""
 CREATE TABLE IF NOT EXISTS purchase_order (
                          id INTEGER PRIMARY KEY,
                          supplier_id INTEGER NOT NULL
@@ -90,7 +100,7 @@ CREATE TABLE IF NOT EXISTS purchase_order (
 """)
         
         # Purchase order lines
-        self.con.execute("""
+        self.cur.execute("""
 CREATE TABLE IF NOT EXISTS po_line (
                          id INTEGER PRIMARY KEY,
                          po_id INTEGER NOT NULL,
@@ -101,7 +111,7 @@ CREATE TABLE IF NOT EXISTS po_line (
 """)
         
         # Sale orders
-        self.con.execute("""
+        self.cur.execute("""
 CREATE TABLE IF NOT EXISTS sale_order (
                          id INTEGER PRIMARY KEY,
                          customer_id INTEGER NOT NULL
@@ -109,7 +119,7 @@ CREATE TABLE IF NOT EXISTS sale_order (
 """)
         
         # Purchase order lines
-        self.con.execute("""
+        self.cur.execute("""
 CREATE TABLE IF NOT EXISTS so_line (
                          id INTEGER PRIMARY KEY,
                          so_id INTEGER NOT NULL,
@@ -120,7 +130,7 @@ CREATE TABLE IF NOT EXISTS so_line (
 """)
         
         # Products
-        self.con.execute("""
+        self.cur.execute("""
 CREATE TABLE IF NOT EXISTS product (
                          sku INTEGER PRIMARY KEY,
                          desc TEXT NOT NULL
@@ -128,7 +138,7 @@ CREATE TABLE IF NOT EXISTS product (
 """)
         
         # Inventory positions
-        self.con.execute("""
+        self.cur.execute("""
 CREATE TABLE IF NOT EXISTS inventory (
                          sku INTEGER PRIMARY KEY,
                          qty INTEGER NOT NULL
