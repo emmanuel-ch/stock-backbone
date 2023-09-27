@@ -35,7 +35,7 @@ class SBB_DBAdmin():
     ########## Regular use #######
     ##############################
 
-    def add_PO(self, supplier_id: str) -> str:
+    def add_PO(self, supplier_id: str) -> int:
         pass
 
     def add_POlines(self, PO_lines: dict) -> bool:
@@ -44,7 +44,7 @@ class SBB_DBAdmin():
     def edit_POlines(self, PO_lines: dict) -> bool:
         pass
 
-    def add_SO(self, customer_id: str) -> str:
+    def add_SO(self, customer_id: str) -> int:
         pass
 
     def add_SOlines(self, SO_lines: dict) -> bool:
@@ -58,16 +58,13 @@ class SBB_DBAdmin():
     ########## Configuration #####
     ##############################
 
-    def add_supplier(self, supplier_name: str) -> str:
+    def add_supplier(self, supplier_name: str) -> int:
         pass
 
-    def add_customer(self, customer_name: str) -> str:
+    def add_customer(self, customer_name: str) -> int:
         pass
 
-    def add_sku(self, sku_desc: str) -> str:
-        pass
-    
-    def first_time_setup(self) -> bool:
+    def add_sku(self, sku_desc: str) -> int:
         pass
 
 
@@ -75,15 +72,15 @@ class SBB_DBAdmin():
     ########## Setup #############
     ##############################
 
-    def close_connection(self):
+    def close_connection(self) -> None:
         self.con.close()
 
-    def is_db_setup(self):
+    def is_db_setup(self) -> bool:
         res = self.con.execute('SELECT name FROM sqlite_master').fetchall()
         list_tables = [item[0] for item in res]
         return all([expected_table in list_tables for expected_table in DB_TABLES])
     
-    def setup_db(self):
+    def setup_db(self) -> None:
         # Purchase orders
         self.con.execute("""
 CREATE TABLE IF NOT EXISTS purchase_order (
