@@ -38,19 +38,47 @@ class SBB_DBAdmin():
     ##############################
 
     def add_PO(self, supplier_id: str) -> int:
-        pass
+        self._cur.execute("""
+                          INSERT INTO purchase_order 
+                          (supplier_id)
+                          VALUES (?)
+                          """,
+                          [supplier_id])
+        self._con.commit()
+        return self._cur.lastrowid
 
     def add_POlines(self, PO_lines: dict) -> bool:
-        pass
+        self._cur.executemany("""
+                              INSERT INTO po_line 
+                              (po_id, sku, qty_ordered, qty_delivered)
+                              VALUES (?, ?, ?, ?)
+                              """,
+                              PO_lines)
+        self._con.commit()
+        return self._cur.rowcount
 
     def edit_POlines(self, PO_lines: dict) -> bool:
         pass
 
     def add_SO(self, customer_id: str) -> int:
-        pass
+        self._cur.execute("""
+                          INSERT INTO sale_order 
+                          (customer_id)
+                          VALUES (?)
+                          """,
+                          [customer_id])
+        self._con.commit()
+        return self._cur.lastrowid
 
     def add_SOlines(self, SO_lines: dict) -> bool:
-        pass
+        self._cur.executemany("""
+                              INSERT INTO so_line 
+                              (so_id, sku, qty_ordered, qty_delivered)
+                              VALUES (?, ?, ?, ?)
+                              """,
+                              SO_lines)
+        self._con.commit()
+        return self._cur.rowcount
 
     def edit_SOlines(self, SO_lines: dict) -> bool:
         pass
@@ -62,21 +90,20 @@ class SBB_DBAdmin():
 
     def add_external_entity(self, supplier_name: str, entity_type: str) -> int:
         self._cur.execute("""
-                         INSERT INTO external_entity (name, entity_type)
-                         VALUES
-                            (?, ?)
-                         """,
-                         [supplier_name, entity_type])
+                          INSERT INTO external_entity 
+                          (name, entity_type)
+                          VALUES (?, ?)
+                          """,
+                          [supplier_name, entity_type])
         self._con.commit()
         return self._cur.lastrowid
 
     def add_sku(self, sku_desc: str) -> int:
         self._cur.execute("""
-                         INSERT INTO product (desc)
-                         VALUES
-                            (?)
-                         """,
-                         [(sku_desc)])
+                          INSERT INTO product (desc)
+                          VALUES (?)
+                          """,
+                          [(sku_desc)])
         self._con.commit()
         return self._cur.lastrowid
         
@@ -126,64 +153,64 @@ class SBB_DBAdmin():
     def setup_db(self) -> None:
         # Purchase orders
         self._cur.execute("""
-CREATE TABLE IF NOT EXISTS purchase_order (
-                         id INTEGER PRIMARY KEY,
-                         supplier_id INTEGER NOT NULL
-);
-""")
+                          CREATE TABLE IF NOT EXISTS purchase_order (
+                              id INTEGER PRIMARY KEY,
+                              supplier_id INTEGER NOT NULL
+                          );
+                          """)
         
         # Purchase order lines
         self._cur.execute("""
-CREATE TABLE IF NOT EXISTS po_line (
-                         id INTEGER PRIMARY KEY,
-                         po_id INTEGER NOT NULL,
-                         sku INTEGER NOT NULL,
-                         qty_ordered INTEGER NOT NULL,
-                         qty_delivered INTEGER NOT NULL
-);
-""")
+                          CREATE TABLE IF NOT EXISTS po_line (
+                              id INTEGER PRIMARY KEY,
+                              po_id INTEGER NOT NULL,
+                              sku INTEGER NOT NULL,
+                              qty_ordered INTEGER NOT NULL,
+                              qty_delivered INTEGER NOT NULL
+                          );
+                          """)
         
         # Sale orders
         self._cur.execute("""
-CREATE TABLE IF NOT EXISTS sale_order (
-                         id INTEGER PRIMARY KEY,
-                         customer_id INTEGER NOT NULL
-);
-""")
+                          CREATE TABLE IF NOT EXISTS sale_order (
+                              id INTEGER PRIMARY KEY,
+                              customer_id INTEGER NOT NULL
+                          );
+                          """)
         
-        # Purchase order lines
+        # Sale order lines
         self._cur.execute("""
-CREATE TABLE IF NOT EXISTS so_line (
-                         id INTEGER PRIMARY KEY,
-                         so_id INTEGER NOT NULL,
-                         sku INTEGER NOT NULL,
-                         qty_ordered INTEGER NOT NULL,
-                         qty_delivered INTEGER NOT NULL
-);
-""")
+                          CREATE TABLE IF NOT EXISTS so_line (
+                              id INTEGER PRIMARY KEY,
+                              so_id INTEGER NOT NULL,
+                              sku INTEGER NOT NULL,
+                              qty_ordered INTEGER NOT NULL,
+                              qty_delivered INTEGER NOT NULL
+                          );
+                          """)
         
         # Products
         self._cur.execute("""
-CREATE TABLE IF NOT EXISTS product (
-                         sku INTEGER PRIMARY KEY,
-                         desc TEXT NOT NULL
-);
-""")
+                          CREATE TABLE IF NOT EXISTS product (
+                              sku INTEGER PRIMARY KEY,
+                              desc TEXT NOT NULL
+                          );
+                          """)
         
         # Inventory positions
         self._cur.execute("""
-CREATE TABLE IF NOT EXISTS inventory (
-                         sku INTEGER PRIMARY KEY,
-                         qty INTEGER NOT NULL
-);
-""")
+                          CREATE TABLE IF NOT EXISTS inventory (
+                              sku INTEGER PRIMARY KEY,
+                              qty INTEGER NOT NULL
+                          );
+                          """)
         
         # Suppliers + Customers
         self._cur.execute("""
-CREATE TABLE IF NOT EXISTS external_entity (
-                         id INTEGER PRIMARY KEY,
-                         name TEXT NOT NULL,
-                         entity_type TEXT NOT NULL
-);
-""")
+                          CREATE TABLE IF NOT EXISTS external_entity (
+                              id INTEGER PRIMARY KEY,
+                              name TEXT NOT NULL,
+                              entity_type TEXT NOT NULL
+                          );
+                          """)
         
