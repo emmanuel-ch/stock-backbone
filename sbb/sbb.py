@@ -65,6 +65,14 @@ class StockBackbone():
             return self._db.add_sku(sku_desc)
         else:
             raise UserInputInvalid('SKU description', sku_desc)
+    
+
+    ##############################
+    ########## Support ###########
+    ##############################
+
+    def is_entity(self, entity_id: int) -> bool:
+        return self._db.is_entity(entity_id)
 
 
 ##############################

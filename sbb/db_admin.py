@@ -81,6 +81,22 @@ class SBB_DBAdmin():
         return self._cur.lastrowid
         
 
+    ##############################
+    ########## Support ###########
+    ##############################
+
+    def is_entity(self, entity_id: int) -> bool:
+        checker = (
+            self
+            ._cur
+            .execute("SELECT name FROM external_entity WHERE id=?", [(entity_id)])
+            .fetchone()
+        )
+        if checker is None:
+            return False
+        elif len(checker) == 1:
+            return True
+        raise Exception(f'Unexpected exception: More than 1 external entity found for id: {entity_id}')
 
     ##############################
     ########## Setup #############

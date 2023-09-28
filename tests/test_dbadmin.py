@@ -61,9 +61,18 @@ def test_add_external_entity(dummy_db):
         .fetchone()
     )
         
-        
-
     assert (new_num_entity == ini_num_entity + 1) and (last_entity_created == entity_details)
+
+
+def test_is_entity_with_existing_entity(dummy_db):
+    entity_details = ('entity name', 'type_of_entity')
+    entity_id = dummy_db[0].add_external_entity(*entity_details)
+    assert dummy_db[0].is_entity(entity_id)
+
+def test_is_entity_with_notexisting_entity(dummy_db):
+    entity_details = ('entity name', 'type_of_entity')
+    entity_id = dummy_db[0].add_external_entity(*entity_details)
+    assert not dummy_db[0].is_entity(entity_id + 1)
 
 
 # def test_add_PO():
