@@ -97,6 +97,19 @@ class SBB_DBAdmin():
         elif len(checker) == 1:
             return True
         raise Exception(f'Unexpected exception: More than 1 external entity found for id: {entity_id}')
+    
+    def is_sku(self, sku: int) -> bool:
+        checker = (
+            self
+            ._cur
+            .execute("SELECT desc FROM product WHERE sku=?", [sku])
+            .fetchone()
+        )
+        if checker is None:
+            return False
+        elif len(checker) == 1:
+            return True
+        raise Exception(f'Unexpected exception: More than 1 sku for: {sku}')
 
     ##############################
     ########## Setup #############

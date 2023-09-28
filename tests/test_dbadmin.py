@@ -75,6 +75,17 @@ def test_is_entity_with_notexisting_entity(dummy_db):
     assert not dummy_db[0].is_entity(entity_id + 1)
 
 
+def test_is_sku_with_existing_sku(dummy_db):
+    product_desc = 'product desc'
+    sku = dummy_db[0].add_sku(product_desc)
+    assert dummy_db[0].is_sku(sku)
+
+def test_is_sku_with_notexisting_sku(dummy_db):
+    product_desc = 'product desc'
+    sku = dummy_db[0].add_sku(product_desc)
+    assert not dummy_db[0].is_sku(sku + 1)
+
+
 # def test_add_PO():
 #     assert False
 

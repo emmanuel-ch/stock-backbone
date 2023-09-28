@@ -73,6 +73,9 @@ class StockBackbone():
 
     def is_entity(self, entity_id: int) -> bool:
         return self._db.is_entity(entity_id)
+    
+    def is_sku(self, sku: int) -> bool:
+        return self._db.is_sku(sku)
 
 
 ##############################
