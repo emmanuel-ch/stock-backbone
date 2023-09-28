@@ -24,7 +24,7 @@ class StockBackbone():
     def __init__(self, db_name):
         if not validate_text_input(db_name, 'db name'):
             raise UserInputInvalid('Database name', db_name)
-        self.db = db_admin.SBB_DBAdmin(db_name)
+        self._db = db_admin.SBB_DBAdmin(db_name)
 
 
     ##############################
@@ -49,14 +49,20 @@ class StockBackbone():
     ##############################
 
     def create_supplier(self, supplier_name: str) -> int:
-        pass
+        if validate_text_input(supplier_name, 'external entity name'):
+            return self._db.add_external_entity(supplier_name, 'supplier')
+        else:
+            raise UserInputInvalid('Supplier name', supplier_name)
 
     def create_customer(self, customer_name: str) -> int:
-        pass
+        if validate_text_input(customer_name, 'external entity name'):
+            return self._db.add_external_entity(customer_name, 'customer')
+        else:
+            raise UserInputInvalid('Customer name', customer_name)
 
     def create_sku(self, sku_desc: str) -> int:
         if validate_text_input(sku_desc, 'sku desc'):
-            return self.db.add_sku(sku_desc)
+            return self._db.add_sku(sku_desc)
         else:
             raise UserInputInvalid('SKU description', sku_desc)
 
@@ -68,11 +74,11 @@ class StockBackbone():
 def validate_text_input(value: str, input_type: str) -> bool:
     match input_type:
         case 'db name':
-            valid_chars = "_" + string.ascii_letters + string.digits
+            valid_chars = '_' + string.ascii_letters + string.digits
             max_length = 30
-        case 'sku desc':
-            valid_chars = " -_.,()[]" + string.ascii_letters + string.digits
-            max_length = 30
+        case 'sku desc' | 'external entity name':
+            valid_chars = ' -_.,()[]' + string.ascii_letters + string.digits
+            max_length = 50
         case _:
             return False
     

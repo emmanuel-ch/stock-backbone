@@ -23,8 +23,10 @@ from sbb.sbb import StockBackbone, validate_text_input
 @pytest.mark.parametrize("field_type,test_input,expected_outcome", [
     ('db name', 'a_good_name', True),
     ('db name', 'not / acceptable', False) ,
-    ('sku desc', 'acceptable 1 (2)_3', True),
-    ('sku desc', 'not["acc]/ept@ble', False)
+    ('sku desc', 'acceptable 1 (2)_3 -_.,()[]', True),
+    ('sku desc', 'not["acc]/ept@ble{*!?&#\+=}', False),
+    ('external entity name', 'acceptable 1 (2)_3 -_.,()[]', True),
+    ('external entity name', 'not["acc]/ept@ble{*!?&#\+=}', False)
     ])
 def test_validate_text_input(field_type, test_input, expected_outcome):
     assert validate_text_input(test_input, field_type) == expected_outcome
@@ -32,7 +34,6 @@ def test_validate_text_input(field_type, test_input, expected_outcome):
 
 # def test_create_sku(dummy_sbb):
 #     assert False
-
 
 # def test_make_PO():
 #     assert False

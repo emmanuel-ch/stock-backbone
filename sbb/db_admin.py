@@ -19,14 +19,15 @@ import sqlite3
 
 
 
-DB_TABLES = ['purchase_order', 'po_line', 'sale_order', 'so_line', 'product', 'inventory']
+DB_TABLES = ['purchase_order', 'po_line', 'sale_order', 'so_line', 
+             'product', 'inventory', 'external_entity']
 
 
 class SBB_DBAdmin():
 
     def __init__(self, db_name):
-        self.con = sqlite3.connect(f'data/{db_name}.db')
-        self.cur = self.con.cursor()
+        self._con = sqlite3.connect(f'data/{db_name}.db')
+        self._cur = self._con.cursor()
         
         if not self.is_db_setup():
             self.setup_db()
@@ -59,22 +60,25 @@ class SBB_DBAdmin():
     ########## Configuration #####
     ##############################
 
-    def add_supplier(self, supplier_name: str) -> int:
-        pass
-
-    def add_customer(self, customer_name: str) -> int:
-        pass
+    def add_external_entity(self, supplier_name: str, entity_type: str) -> int:
+        self._cur.execute("""
+                         INSERT INTO external_entity (name, entity_type)
+                         VALUES
+                            (?, ?)
+                         """,
+                         [supplier_name, entity_type])
+        self._con.commit()
+        return self._cur.lastrowid
 
     def add_sku(self, sku_desc: str) -> int:
-        self.cur.execute("""
+        self._cur.execute("""
                          INSERT INTO product (desc)
                          VALUES
                             (?)
                          """,
                          [(sku_desc)])
-        self.con.commit()
-
-        return self.cur.lastrowid
+        self._con.commit()
+        return self._cur.lastrowid
         
 
 
@@ -83,16 +87,16 @@ class SBB_DBAdmin():
     ##############################
 
     def close_connection(self) -> None:
-        self.con.close()
+        self._con.close()
 
     def is_db_setup(self) -> bool:
-        res = self.cur.execute('SELECT name FROM sqlite_master').fetchall()
+        res = self._cur.execute("SELECT name FROM sqlite_master").fetchall()
         list_tables = [item[0] for item in res]
         return all([expected_table in list_tables for expected_table in DB_TABLES])
     
     def setup_db(self) -> None:
         # Purchase orders
-        self.cur.execute("""
+        self._cur.execute("""
 CREATE TABLE IF NOT EXISTS purchase_order (
                          id INTEGER PRIMARY KEY,
                          supplier_id INTEGER NOT NULL
@@ -100,7 +104,7 @@ CREATE TABLE IF NOT EXISTS purchase_order (
 """)
         
         # Purchase order lines
-        self.cur.execute("""
+        self._cur.execute("""
 CREATE TABLE IF NOT EXISTS po_line (
                          id INTEGER PRIMARY KEY,
                          po_id INTEGER NOT NULL,
@@ -111,7 +115,7 @@ CREATE TABLE IF NOT EXISTS po_line (
 """)
         
         # Sale orders
-        self.cur.execute("""
+        self._cur.execute("""
 CREATE TABLE IF NOT EXISTS sale_order (
                          id INTEGER PRIMARY KEY,
                          customer_id INTEGER NOT NULL
@@ -119,7 +123,7 @@ CREATE TABLE IF NOT EXISTS sale_order (
 """)
         
         # Purchase order lines
-        self.cur.execute("""
+        self._cur.execute("""
 CREATE TABLE IF NOT EXISTS so_line (
                          id INTEGER PRIMARY KEY,
                          so_id INTEGER NOT NULL,
@@ -130,7 +134,7 @@ CREATE TABLE IF NOT EXISTS so_line (
 """)
         
         # Products
-        self.cur.execute("""
+        self._cur.execute("""
 CREATE TABLE IF NOT EXISTS product (
                          sku INTEGER PRIMARY KEY,
                          desc TEXT NOT NULL
@@ -138,9 +142,19 @@ CREATE TABLE IF NOT EXISTS product (
 """)
         
         # Inventory positions
-        self.cur.execute("""
+        self._cur.execute("""
 CREATE TABLE IF NOT EXISTS inventory (
                          sku INTEGER PRIMARY KEY,
                          qty INTEGER NOT NULL
 );
 """)
+        
+        # Suppliers + Customers
+        self._cur.execute("""
+CREATE TABLE IF NOT EXISTS external_entity (
+                         id INTEGER PRIMARY KEY,
+                         name TEXT NOT NULL,
+                         entity_type TEXT NOT NULL
+);
+""")
+        
