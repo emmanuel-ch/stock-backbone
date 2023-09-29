@@ -63,7 +63,29 @@ class StockBackbone():
         pass
 
     def make_SO(self, customer_id: int, SO_lines: dict) -> int:
-        pass
+        if not self.is_entity(customer_id):
+            raise EntityDoesntExist('customer', customer_id)
+        
+        lines = []
+        for so_line in SO_lines:
+            if not self.is_sku(so_line[0]):
+                raise SKUDoesntExist(so_line[0])
+            
+            try:
+                qty_ordered = float(so_line[1])
+            except ValueError:
+                raise OrderQtyIncorrect(*so_line)
+            
+            lines.append((so_line[0], qty_ordered, 0))
+        
+        # Input validated
+        so_id = self._db.add_SO(customer_id)
+        lines = [(so_id, *line_content) for line_content in lines]
+        num_lines_added = self._db.add_SOlines(lines)
+        if num_lines_added != len(SO_lines):
+            raise SBB_Exception(f'Unexpected exception: {num_lines_added} lines created VS. expected {len(SO_lines)}')
+
+        return so_id
 
     def issue_SO(self, SO_id: int) -> bool:
         pass

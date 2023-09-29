@@ -35,21 +35,9 @@ def test_missing_table(dummy_db):
     assert not dummy_db.is_db_setup()
 
 
-def test_add_sku(dummy_db):
-    ini_num_sku = dummy_db._cur.execute("SELECT COUNT(*) FROM product;").fetchone()[0]
-    sku_desc = 'test_sku_name'
-    dummy_db.add_sku(sku_desc)
-    new_num_sku = dummy_db._cur.execute("SELECT COUNT(*) FROM product;").fetchone()[0]
-
-    last_sku_desc_created = (
-        dummy_db
-        ._cur
-        .execute("SELECT desc FROM product ORDER BY sku DESC LIMIT 1")
-        .fetchone()[0]
-    )
-
-    assert (new_num_sku == ini_num_sku + 1) and (last_sku_desc_created == sku_desc)
-
+##############################
+####### Entities & SKU #######
+##############################
 
 def test_add_external_entity(dummy_db):
     # Initial state
@@ -81,6 +69,20 @@ def test_is_entity_with_notexisting_entity(dummy_db):
     entity_id = dummy_db.add_external_entity(*entity_details)
     assert not dummy_db.is_entity(entity_id + 1)
 
+def test_add_sku(dummy_db):
+    ini_num_sku = dummy_db._cur.execute("SELECT COUNT(*) FROM product;").fetchone()[0]
+    sku_desc = 'test_sku_name'
+    dummy_db.add_sku(sku_desc)
+    new_num_sku = dummy_db._cur.execute("SELECT COUNT(*) FROM product;").fetchone()[0]
+
+    last_sku_desc_created = (
+        dummy_db
+        ._cur
+        .execute("SELECT desc FROM product ORDER BY sku DESC LIMIT 1")
+        .fetchone()[0]
+    )
+
+    assert (new_num_sku == ini_num_sku + 1) and (last_sku_desc_created == sku_desc)
 
 def test_is_sku_with_existing_sku(dummy_db):
     product_desc = 'product desc'
@@ -92,6 +94,9 @@ def test_is_sku_with_notexisting_sku(dummy_db):
     sku = dummy_db.add_sku(product_desc)
     assert not dummy_db.is_sku(sku + 1)
 
+##############################
+######### S & P orders #######
+##############################
 
 def test_add_PO(dummy_db):
     # Initial state

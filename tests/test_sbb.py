@@ -26,7 +26,11 @@ def dummy_sbb():
     ])
 def test_validate_text_input(field_type, test_input, expected_outcome):
     assert validate_text_input(test_input, field_type) == expected_outcome
-    
+
+
+##############################
+######## Purch. orders #######
+##############################
 
 def test_make_PO_invalid_supplier_id(dummy_sbb):
     sku = dummy_sbb.create_sku('A product')
@@ -56,10 +60,40 @@ def test_make_PO_valid(dummy_sbb):
     assert isinstance(po_id, int)
 
 
-# def test_receive_PO():
-#     assert False
+##############################
+########## Sale orders #######
+##############################
 
-# def test_make_SO():
+def test_make_SO_invalid_customer_id(dummy_sbb):
+    sku = dummy_sbb.create_sku('A product')
+    with pytest.raises(EntityDoesntExist):
+        dummy_sbb.make_SO(666, {sku + 1, 5})
+
+def test_make_SO_invalid_sku(dummy_sbb):
+    customer_id = dummy_sbb.create_customer('A customer')
+    sku = dummy_sbb.create_sku('A product')
+    with pytest.raises(SKUDoesntExist):
+        dummy_sbb.make_SO(customer_id, [(sku + 1, 1)])
+
+def test_make_SO_invalid_qty_ordered(dummy_sbb):
+    customer_id = dummy_sbb.create_customer('A customer')
+    sku = dummy_sbb.create_sku('A product')
+    with pytest.raises(OrderQtyIncorrect):
+        dummy_sbb.make_SO(customer_id, [(sku, '1.b')])
+
+def test_make_SO_valid(dummy_sbb):
+    customer_id = dummy_sbb.create_customer('A customer')
+    sku = [dummy_sbb.create_sku(f'Product {chr(65+i)}') for i in range(3)]
+    so_id = dummy_sbb.make_SO(customer_id, [
+        (sku[0], 5),
+        (sku[1], 1),
+        (sku[2], 100)
+        ])
+    assert isinstance(so_id, int)
+
+
+
+# def test_receive_PO():
 #     assert False
 
 # def test_issue_SO():
