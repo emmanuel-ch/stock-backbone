@@ -25,8 +25,11 @@ DB_TABLES = ['purchase_order', 'po_line', 'sale_order', 'so_line',
 
 class SBB_DBAdmin():
 
-    def __init__(self, db_name):
-        self._con = sqlite3.connect(f'data/{db_name}.db')
+    def __init__(self, db_name: str) -> None:
+        if db_name == ':memory:':
+            self._con = sqlite3.connect(':memory:')
+        else:
+            self._con = sqlite3.connect(f'data/{db_name}.db')
         self._cur = self._con.cursor()
         
         if not self.is_db_setup():
@@ -41,17 +44,17 @@ class SBB_DBAdmin():
         self._cur.execute("""
                           INSERT INTO purchase_order 
                           (supplier_id)
-                          VALUES (?)
+                          VALUES (?);
                           """,
                           [supplier_id])
         self._con.commit()
         return self._cur.lastrowid
 
-    def add_POlines(self, PO_lines: dict) -> bool:
+    def add_POlines(self, PO_lines: list) -> int:
         self._cur.executemany("""
                               INSERT INTO po_line 
                               (po_id, sku, qty_ordered, qty_delivered)
-                              VALUES (?, ?, ?, ?)
+                              VALUES (?, ?, ?, ?);
                               """,
                               PO_lines)
         self._con.commit()
@@ -64,17 +67,17 @@ class SBB_DBAdmin():
         self._cur.execute("""
                           INSERT INTO sale_order 
                           (customer_id)
-                          VALUES (?)
+                          VALUES (?);
                           """,
                           [customer_id])
         self._con.commit()
         return self._cur.lastrowid
 
-    def add_SOlines(self, SO_lines: dict) -> bool:
+    def add_SOlines(self, SO_lines: list) -> int:
         self._cur.executemany("""
                               INSERT INTO so_line 
                               (so_id, sku, qty_ordered, qty_delivered)
-                              VALUES (?, ?, ?, ?)
+                              VALUES (?, ?, ?, ?);
                               """,
                               SO_lines)
         self._con.commit()
@@ -92,7 +95,7 @@ class SBB_DBAdmin():
         self._cur.execute("""
                           INSERT INTO external_entity 
                           (name, entity_type)
-                          VALUES (?, ?)
+                          VALUES (?, ?);
                           """,
                           [supplier_name, entity_type])
         self._con.commit()
@@ -101,7 +104,7 @@ class SBB_DBAdmin():
     def add_sku(self, sku_desc: str) -> int:
         self._cur.execute("""
                           INSERT INTO product (desc)
-                          VALUES (?)
+                          VALUES (?);
                           """,
                           [(sku_desc)])
         self._con.commit()

@@ -6,18 +6,14 @@ import pytest
 from pathlib import Path
 
 from sbb.sbb import StockBackbone, validate_text_input
+from sbb.exceptions import EntityDoesntExist, SKUDoesntExist, OrderQtyIncorrect
 
 
-# @pytest.fixture
-# def dummy_sbb():
-#     db_name = 'test_db'
-#     sbb_object = StockBackbone(db_name)
-#     db_path = Path('data') / (db_name + '.db')
-
-#     yield (sbb_object, db_path)
-
-#     sbb_object.db.close_connection()
-#     db_path.unlink()
+@pytest.fixture
+def dummy_sbb():
+    sbb_object = StockBackbone(':memory:')
+    yield sbb_object
+    sbb_object._db.close_connection()
 
 
 @pytest.mark.parametrize("field_type,test_input,expected_outcome", [
@@ -32,11 +28,33 @@ def test_validate_text_input(field_type, test_input, expected_outcome):
     assert validate_text_input(test_input, field_type) == expected_outcome
     
 
-# def test_create_sku(dummy_sbb):
-#     assert False
+def test_make_PO_invalid_supplier_id(dummy_sbb):
+    sku = dummy_sbb.create_sku('A product')
+    with pytest.raises(EntityDoesntExist):
+        dummy_sbb.make_PO(666, {sku + 1, 5})
 
-# def test_make_PO():
-#     assert False
+def test_make_PO_invalid_sku(dummy_sbb):
+    supplier_id = dummy_sbb.create_supplier('A supplier')
+    sku = dummy_sbb.create_sku('A product')
+    with pytest.raises(SKUDoesntExist):
+        dummy_sbb.make_PO(supplier_id, [(sku + 1, 1)])
+
+def test_make_PO_invalid_qty_ordered(dummy_sbb):
+    supplier_id = dummy_sbb.create_supplier('A supplier')
+    sku = dummy_sbb.create_sku('A product')
+    with pytest.raises(OrderQtyIncorrect):
+        dummy_sbb.make_PO(supplier_id, [(sku, '1.b')])
+
+def test_make_PO_valid(dummy_sbb):
+    supplier_id = dummy_sbb.create_supplier('A supplier')
+    sku = [dummy_sbb.create_sku(f'Product {chr(65+i)}') for i in range(3)]
+    po_id = dummy_sbb.make_PO(supplier_id, [
+        (sku[0], 5),
+        (sku[1], 1),
+        (sku[2], 100)
+        ])
+    assert isinstance(po_id, int)
+
 
 # def test_receive_PO():
 #     assert False
@@ -47,9 +65,3 @@ def test_validate_text_input(field_type, test_input, expected_outcome):
 # def test_issue_SO():
 #     assert False
 
-# def test_create_supplier():
-#     assert False
-
-# def test_create_customer():
-#     assert False
-    

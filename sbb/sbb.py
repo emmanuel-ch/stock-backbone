@@ -16,13 +16,15 @@ Class StockBackbone - methods:
 import string
 
 from sbb import db_admin
-from sbb.exceptions import UserInputInvalid
+from sbb.exceptions import SBB_Exception, UserInputInvalid, EntityDoesntExist, SKUDoesntExist, OrderQtyIncorrect
 
 
 class StockBackbone():
 
-    def __init__(self, db_name):
-        if not validate_text_input(db_name, 'db name'):
+    def __init__(self, db_name: str) -> None:
+        if db_name == ':memory:':
+            pass
+        elif not validate_text_input(db_name, 'db name'):
             raise UserInputInvalid('Database name', db_name)
         self._db = db_admin.SBB_DBAdmin(db_name)
 
@@ -31,8 +33,31 @@ class StockBackbone():
     ########## Regular use #######
     ##############################
 
-    def make_PO(self, supplier_id: int, PO_lines: dict) -> int:
-        pass
+    def make_PO(self, supplier_id: int, PO_lines: list) -> int:
+        if not self.is_entity(supplier_id):
+            raise EntityDoesntExist('supplier', supplier_id)
+        
+        lines = []
+        for po_line in PO_lines:
+            if not self.is_sku(po_line[0]):
+                raise SKUDoesntExist(po_line[0])
+            
+            try:
+                qty_ordered = float(po_line[1])
+            except ValueError:
+                raise OrderQtyIncorrect(*po_line)
+            
+            lines.append((po_line[0], qty_ordered, 0))
+        
+        # Input validated
+        po_id = self._db.add_PO(supplier_id)
+        lines = [(po_id, *line_content) for line_content in lines]
+        num_lines_added = self._db.add_POlines(lines)
+        # if num_lines_added != len(PO_lines):
+        #     raise SBB_Exception(f'Unexpected exception: {num_lines_added} lines created VS. expected {len(PO_lines)}')
+
+        return po_id
+
 
     def receive_PO(self, PO_id: int) -> bool:
         pass
@@ -95,4 +120,8 @@ def validate_text_input(value: str, input_type: str) -> bool:
     
     acceptable_name = ''.join(char for char in value if char in valid_chars)
     return (value == acceptable_name) and (len(value) > 0) and (len(value) <= max_length)
+
+
+def validate_order_line(order_line: tuple):
+    return all([item is int for item in order_line])
 
