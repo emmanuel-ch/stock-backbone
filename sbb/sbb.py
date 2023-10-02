@@ -10,7 +10,7 @@ Class StockBackbone - methods:
     create_supplier
     create customer
     create_sku
-    
+
     is_entity
     is_sku
 
@@ -74,6 +74,14 @@ class StockBackbone():
         order_info = self._db.get_order(order_id)
         order_info['lines'] = self._db.get_order_lines(order_id)
         return order_info
+    
+    def set_order(self, mode: str, order_id: int) -> bool:
+        if mode == 'full-delivery':
+            order_lines = self.get_order(order_id)['lines']
+            data = [[i[3], i[0]] for i in order_lines]
+            self._db.set_order_lines('delivered_qty', data)
+        else:
+            SBB_Exception('Unexpected exception: order-setting order not expected')
 
 
     ##############################

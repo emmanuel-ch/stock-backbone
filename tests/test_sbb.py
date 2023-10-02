@@ -59,6 +59,21 @@ def test_make_PO_valid(dummy_sbb):
         ])
     assert isinstance(po_id, int)
 
+def test_receive_PO(dummy_sbb):
+    supplier_id = dummy_sbb.create_supplier('A supplier')
+    sku = [dummy_sbb.create_sku(f'Product {chr(65+i)}') for i in range(3)]
+    po_id = dummy_sbb.make_PO(supplier_id, [
+        (sku[0], 5),
+        (sku[1], 1),
+        (sku[2], 100)
+        ])
+    
+    lines_before = dummy_sbb.get_order(po_id)['lines']
+    dummy_sbb.set_order('full-delivery', po_id)
+    lines_after = dummy_sbb.get_order(po_id)['lines']
+
+    assert all([lines_before[i][3] == lines_after[i][4] for i in range(len(lines_before))])
+
 
 ##############################
 ########## Sale orders #######

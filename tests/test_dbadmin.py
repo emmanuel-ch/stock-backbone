@@ -151,5 +151,5 @@ def test_get_order_lines(dummy_db):
     adnl_entries = dummy_db.add_order_lines([*details])
 
     info_received = dummy_db.get_order_lines(1)
-    assert info_received == [i[1:] for i in details]
+    assert [i[1:] for i in info_received] == [i[1:] for i in details]
 

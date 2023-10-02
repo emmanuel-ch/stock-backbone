@@ -72,13 +72,22 @@ class SBB_DBAdmin():
         self._con.commit()
         return self._cur.rowcount
     
-    def get_order_lines(self, order_id):
+    def get_order_lines(self, order_id: int) -> list:
         order_lines = (
             self._cur
-            .execute("SELECT position, sku, qty_ordered, qty_delivered FROM order_line WHERE order_id = ?", [order_id])
+            .execute("SELECT id, position, sku, qty_ordered, qty_delivered FROM order_line WHERE order_id = ?", [order_id])
             .fetchall()
         )
         return order_lines
+    
+    def set_order_lines(self, mode: str, data: list) -> None:
+        if mode == 'delivered_qty':
+            self._cur.executemany("""
+                              UPDATE order_line SET
+                                  qty_delivered = ?
+                              WHERE id = ?
+                              """,
+                              data)
 
 
     ##############################
