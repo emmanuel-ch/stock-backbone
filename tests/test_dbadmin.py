@@ -2,7 +2,6 @@
 Tests SBB_DBAdmin methods.
 """
 
-from typing import Callable
 import pytest
 from pathlib import Path
 
@@ -96,92 +95,45 @@ def test_is_sku_with_notexisting_sku(dummy_db):
 
 
 ##############################
-######### S & P orders #######
+########### Orders ###########
 ##############################
 
-def test_add_PO(dummy_db):
+def test_add_order(dummy_db):
     # Initial state
-    ini_num_entries = dummy_db._cur.execute("SELECT COUNT(*) FROM purchase_order;").fetchone()[0]
+    ini_num_entries = dummy_db._cur.execute("SELECT COUNT(*) FROM orders;").fetchone()[0]
 
     # Change
-    details = (123,)
-    dummy_db.add_PO(*details)
+    details = ('some_order_type', 123,)
+    dummy_db.add_order(*details)
 
     # Final state
-    new_num_entries = dummy_db._cur.execute("SELECT COUNT(*) FROM purchase_order;").fetchone()[0]
+    new_num_entries = dummy_db._cur.execute("SELECT COUNT(*) FROM orders;").fetchone()[0]
     last_item_created = (
         dummy_db
         ._cur
-        .execute("SELECT supplier_id FROM purchase_order ORDER BY id DESC LIMIT 1")
+        .execute("SELECT order_type, entity_id FROM orders ORDER BY id DESC LIMIT 1")
         .fetchone()
     )
         
     assert (new_num_entries == ini_num_entries + 1) and (last_item_created == details)
 
 
-def test_add_PO_lines(dummy_db):
+def test_add_order_lines(dummy_db):
     # Initial state
-    ini_num_entries = dummy_db._cur.execute("SELECT COUNT(*) FROM po_line;").fetchone()[0]
+    ini_num_entries = dummy_db._cur.execute("SELECT COUNT(*) FROM order_line;").fetchone()[0]
 
     # Change
     details = [(1, 1, 111, 1, 0), (5, 1, 222, 2, 0), (5, 2, 333, 3, 0)]
-    adnl_entries = dummy_db.add_POlines([*details])
+    adnl_entries = dummy_db.add_order_lines([*details])
 
     # Final state
-    new_num_entries = dummy_db._cur.execute("SELECT COUNT(*) FROM po_line;").fetchone()[0]
+    new_num_entries = dummy_db._cur.execute("SELECT COUNT(*) FROM order_line;").fetchone()[0]
     last_items_created = (
         dummy_db
         ._cur
-        .execute("SELECT po_id, position, sku, qty_ordered, qty_delivered FROM po_line ORDER BY id DESC LIMIT 3")
+        .execute("SELECT order_id, position, sku, qty_ordered, qty_delivered FROM order_line ORDER BY id DESC LIMIT 3")
         .fetchall()
     )
         
     assert (new_num_entries == adnl_entries == ini_num_entries + 3) and (last_items_created[::-1] == details)
-
-
-def test_add_SO(dummy_db):
-    # Initial state
-    ini_num_entries = dummy_db._cur.execute("SELECT COUNT(*) FROM sale_order;").fetchone()[0]
-
-    # Change
-    details = (123,)
-    dummy_db.add_SO(*details)
-
-    # Final state
-    new_num_entries = dummy_db._cur.execute("SELECT COUNT(*) FROM sale_order;").fetchone()[0]
-    last_item_created = (
-        dummy_db
-        ._cur
-        .execute("SELECT customer_id FROM sale_order ORDER BY id DESC LIMIT 1")
-        .fetchone()
-    )
-        
-    assert (new_num_entries == ini_num_entries + 1) and (last_item_created == details)
-
-
-def test_add_SO_lines(dummy_db):
-    # Initial state
-    ini_num_entries = dummy_db._cur.execute("SELECT COUNT(*) FROM so_line;").fetchone()[0]
-
-    # Change
-    details = [(1, 1, 111, 1, 0), (5, 1, 222, 2, 0), (5, 2, 333, 3, 0)]
-    adnl_entries = dummy_db.add_SOlines([*details])
-
-    # Final state
-    new_num_entries = dummy_db._cur.execute("SELECT COUNT(*) FROM so_line;").fetchone()[0]
-    last_items_created = (
-        dummy_db
-        ._cur
-        .execute("SELECT so_id, position, sku, qty_ordered, qty_delivered FROM so_line ORDER BY id DESC LIMIT 3")
-        .fetchall()
-    )
-        
-    assert (new_num_entries == adnl_entries == ini_num_entries + 3) and (last_items_created[::-1] == details)
-
-
-# def test_edit_POlines():
-#     assert False
-
-# def test_edit_SOlines():
-#     assert False
 

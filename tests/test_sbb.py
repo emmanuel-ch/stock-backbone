@@ -91,11 +91,3 @@ def test_make_SO_valid(dummy_sbb):
         ])
     assert isinstance(so_id, int)
 
-
-
-# def test_receive_PO():
-#     assert False
-
-# def test_issue_SO():
-#     assert False
-

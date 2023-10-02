@@ -2,12 +2,10 @@
 Administration of database. The methods below receive requests and interact with database.
 
 Class SBB_DBAdmin - methods:
-    add_PO
-    add_POlines
-    edit_POlines
-    add_SO
-    add_SOlines
-    edit_SOlines
+    add_order
+    get_order
+    add_order_lines
+    get_order_lines
 
     add_external_entity
     add_sku
@@ -45,68 +43,42 @@ class SBB_DBAdmin():
     ########## Regular use #######
     ##############################
 
-    def add_PO(self, supplier_id: str) -> int:
+    def add_order(self, order_type: str, entity_id: str) -> int:
         self._cur.execute("""
-                          INSERT INTO purchase_order 
-                          (supplier_id)
-                          VALUES (?);
+                          INSERT INTO orders 
+                          (order_type, entity_id)
+                          VALUES (?, ?);
                           """,
-                          [supplier_id])
+                          [order_type, entity_id])
         self._con.commit()
         return self._cur.lastrowid
     
-    def get_PO(self, po_id):
-        po_info = (
+    def get_order(self, order_id):
+        order = (
             self._cur
-            .execute("SELECT supplier_id FROM purchase_order WHERE id = ?", [(po_id)])
+            .execute("SELECT order_type, entity_id FROM orders WHERE id = ?", [order_id])
             .fetchone()
         )
-        return {'supplier_id': po_info[0]}
+        return {'order_type': order[0], 'entity_id': order[1]}
 
 
-    def add_POlines(self, PO_lines: list) -> int:
+    def add_order_lines(self, order_lines: list) -> int:
         self._cur.executemany("""
-                              INSERT INTO po_line 
-                              (po_id, position, sku, qty_ordered, qty_delivered)
+                              INSERT INTO order_line 
+                              (order_id, position, sku, qty_ordered, qty_delivered)
                               VALUES (?, ?, ?, ?, ?);
                               """,
-                              PO_lines)
+                              order_lines)
         self._con.commit()
         return self._cur.rowcount
     
-    def get_POlines(self, po_id):
-        po_lines = (
+    def get_order_lines(self, order_id):
+        order_lines = (
             self._cur
-            .execute("SELECT position, sku, qty_ordered, qty_delivered FROM po_line WHERE po_id = ?", [(po_id)])
+            .execute("SELECT position, sku, qty_ordered, qty_delivered FROM order_line WHERE po_id = ?", [order_id])
             .fetchall()
         )
-        return po_lines
-
-    def edit_POlines(self, PO_lines: dict) -> bool:
-        pass
-
-    def add_SO(self, customer_id: str) -> int:
-        self._cur.execute("""
-                          INSERT INTO sale_order 
-                          (customer_id)
-                          VALUES (?);
-                          """,
-                          [customer_id])
-        self._con.commit()
-        return self._cur.lastrowid
-
-    def add_SOlines(self, SO_lines: list) -> int:
-        self._cur.executemany("""
-                              INSERT INTO so_line 
-                              (so_id, position, sku, qty_ordered, qty_delivered)
-                              VALUES (?, ?, ?, ?, ?);
-                              """,
-                              SO_lines)
-        self._con.commit()
-        return self._cur.rowcount
-
-    def edit_SOlines(self, SO_lines: dict) -> bool:
-        pass
+        return order_lines
 
 
     ##############################
@@ -176,39 +148,20 @@ class SBB_DBAdmin():
         return all([expected_table in list_tables for expected_table in DB_TABLES])
     
     def setup_db(self) -> None:
-        # Purchase orders
+        # Orders
         self._cur.execute("""
-                          CREATE TABLE IF NOT EXISTS purchase_order (
+                          CREATE TABLE IF NOT EXISTS orders (
                               id INTEGER PRIMARY KEY,
-                              supplier_id INTEGER NOT NULL
+                              order_type TEXT NOT NULL,
+                              entity_id INTEGER NOT NULL
                           );
                           """)
         
-        # Purchase order lines
+        # Order lines
         self._cur.execute("""
-                          CREATE TABLE IF NOT EXISTS po_line (
+                          CREATE TABLE IF NOT EXISTS order_line (
                               id INTEGER PRIMARY KEY,
-                              po_id INTEGER NOT NULL,
-                              position INTEGER NOT NULL,
-                              sku INTEGER NOT NULL,
-                              qty_ordered INTEGER NOT NULL,
-                              qty_delivered INTEGER NOT NULL
-                          );
-                          """)
-        
-        # Sale orders
-        self._cur.execute("""
-                          CREATE TABLE IF NOT EXISTS sale_order (
-                              id INTEGER PRIMARY KEY,
-                              customer_id INTEGER NOT NULL
-                          );
-                          """)
-        
-        # Sale order lines
-        self._cur.execute("""
-                          CREATE TABLE IF NOT EXISTS so_line (
-                              id INTEGER PRIMARY KEY,
-                              so_id INTEGER NOT NULL,
+                              order_id INTEGER NOT NULL,
                               position INTEGER NOT NULL,
                               sku INTEGER NOT NULL,
                               qty_ordered INTEGER NOT NULL,

@@ -3,13 +3,14 @@ Interface to user.
 
 Class StockBackbone - methods:
     make_PO
-    receive_PO
     make_SO
-    issue_SO
+    _make_order
+    get_order
 
     create_supplier
     create customer
     create_sku
+    
     is_entity
     is_sku
 
@@ -37,69 +38,42 @@ class StockBackbone():
     ##############################
 
     def make_PO(self, supplier_id: int, PO_lines: list) -> int:
-        if not self.is_entity(supplier_id):
-            raise EntityDoesntExist('supplier', supplier_id)
+        return self._make_order('purchase', 'supplier', supplier_id, PO_lines)
+
+    def make_SO(self, customerer_id: int, SO_lines: list) -> int:
+        return self._make_order('sale', 'customer', customerer_id, SO_lines)
+
+    def _make_order(self, order_type: str, entity_type: str, entity_id: int, order_lines: list) -> int:
+        if not self.is_entity(entity_id):
+            raise EntityDoesntExist(entity_type, entity_id)
         
         lines = []
         position = 1
-        for po_line in PO_lines:
-            if not self.is_sku(po_line[0]):
-                raise SKUDoesntExist(po_line[0])
+        for order_line in order_lines:
+            if not self.is_sku(order_line[0]):
+                raise SKUDoesntExist(order_line[0])
             
             try:
-                qty_ordered = float(po_line[1])
+                qty_ordered = float(order_line[1])
             except ValueError:
-                raise OrderQtyIncorrect(*po_line)
+                raise OrderQtyIncorrect(*order_line)
             
-            lines.append((position, po_line[0], qty_ordered, 0))
+            lines.append((position, order_line[0], qty_ordered, 0))
             position += 1
         
         # Input validated
-        po_id = self._db.add_PO(supplier_id)
-        lines = [(po_id, *line_content) for line_content in lines]
-        num_lines_added = self._db.add_POlines(lines)
-        if num_lines_added != len(PO_lines):
-            raise SBB_Exception(f'Unexpected exception: {num_lines_added} lines created VS. expected {len(PO_lines)}')
+        order_id = self._db.add_order(order_type, entity_id)
+        lines = [(order_id, *line_content) for line_content in lines]
+        num_lines_added = self._db.add_order_lines(lines)
+        if num_lines_added != len(order_lines):
+            raise SBB_Exception(f'Unexpected exception: {num_lines_added} lines created VS. expected {len(order_lines)}')
 
-        return po_id
+        return order_id
 
-    def get_PO(self, po_id):
-        po_info = self._db.get_PO(po_id)
-        po_info['lines'] = self._db.get_POlines(po_id)
-        return po_info
-
-    def receive_PO(self, PO_id: int) -> bool:
-        pass
-
-    def make_SO(self, customer_id: int, SO_lines: dict) -> int:
-        if not self.is_entity(customer_id):
-            raise EntityDoesntExist('customer', customer_id)
-        
-        lines = []
-        position = 1
-        for so_line in SO_lines:
-            if not self.is_sku(so_line[0]):
-                raise SKUDoesntExist(so_line[0])
-            
-            try:
-                qty_ordered = float(so_line[1])
-            except ValueError:
-                raise OrderQtyIncorrect(*so_line)
-            
-            lines.append((position, so_line[0], qty_ordered, 0))
-            position += 1
-        
-        # Input validated
-        so_id = self._db.add_SO(customer_id)
-        lines = [(so_id, *line_content) for line_content in lines]
-        num_lines_added = self._db.add_SOlines(lines)
-        if num_lines_added != len(SO_lines):
-            raise SBB_Exception(f'Unexpected exception: {num_lines_added} lines created VS. expected {len(SO_lines)}')
-
-        return so_id
-
-    def issue_SO(self, SO_id: int) -> bool:
-        pass
+    def get_order(self, order_id):
+        order_info = self._db.get_order(order_id)
+        order_info['lines'] = self._db.get_order_lines(order_id)
+        return order_info
 
 
     ##############################
