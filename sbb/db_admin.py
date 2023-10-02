@@ -75,7 +75,7 @@ class SBB_DBAdmin():
     def get_order_lines(self, order_id):
         order_lines = (
             self._cur
-            .execute("SELECT position, sku, qty_ordered, qty_delivered FROM order_line WHERE po_id = ?", [order_id])
+            .execute("SELECT position, sku, qty_ordered, qty_delivered FROM order_line WHERE order_id = ?", [order_id])
             .fetchall()
         )
         return order_lines

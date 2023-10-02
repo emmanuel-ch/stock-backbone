@@ -137,3 +137,19 @@ def test_add_order_lines(dummy_db):
         
     assert (new_num_entries == adnl_entries == ini_num_entries + 3) and (last_items_created[::-1] == details)
 
+
+def test_get_order(dummy_db):
+    details = ('some_order_type', 123,)
+    order_no = dummy_db.add_order(*details)
+
+    info_received = dummy_db.get_order(order_no)
+    assert tuple(info_received.values()) == details
+
+
+def test_get_order_lines(dummy_db):
+    details = [(1, 1, 111, 1, 0), (1, 1, 222, 2, 0), (1, 2, 333, 3, 0)]
+    adnl_entries = dummy_db.add_order_lines([*details])
+
+    info_received = dummy_db.get_order_lines(1)
+    assert info_received == [i[1:] for i in details]
+
