@@ -10,7 +10,10 @@ Class StockBackbone - methods:
     create_supplier
     create customer
     create_sku
-    first_time_setup
+    is_entity
+    is_sku
+
+validate_text_input
 """
 
 import string
@@ -38,6 +41,7 @@ class StockBackbone():
             raise EntityDoesntExist('supplier', supplier_id)
         
         lines = []
+        position = 1
         for po_line in PO_lines:
             if not self.is_sku(po_line[0]):
                 raise SKUDoesntExist(po_line[0])
@@ -47,7 +51,8 @@ class StockBackbone():
             except ValueError:
                 raise OrderQtyIncorrect(*po_line)
             
-            lines.append((po_line[0], qty_ordered, 0))
+            lines.append((position, po_line[0], qty_ordered, 0))
+            position += 1
         
         # Input validated
         po_id = self._db.add_PO(supplier_id)
@@ -67,6 +72,7 @@ class StockBackbone():
             raise EntityDoesntExist('customer', customer_id)
         
         lines = []
+        position = 1
         for so_line in SO_lines:
             if not self.is_sku(so_line[0]):
                 raise SKUDoesntExist(so_line[0])
@@ -76,7 +82,8 @@ class StockBackbone():
             except ValueError:
                 raise OrderQtyIncorrect(*so_line)
             
-            lines.append((so_line[0], qty_ordered, 0))
+            lines.append((position, so_line[0], qty_ordered, 0))
+            position += 1
         
         # Input validated
         so_id = self._db.add_SO(customer_id)

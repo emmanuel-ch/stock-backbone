@@ -94,6 +94,7 @@ def test_is_sku_with_notexisting_sku(dummy_db):
     sku = dummy_db.add_sku(product_desc)
     assert not dummy_db.is_sku(sku + 1)
 
+
 ##############################
 ######### S & P orders #######
 ##############################
@@ -123,7 +124,7 @@ def test_add_PO_lines(dummy_db):
     ini_num_entries = dummy_db._cur.execute("SELECT COUNT(*) FROM po_line;").fetchone()[0]
 
     # Change
-    details = [(1, 111, 1, 0), (5, 222, 2, 0), (5, 333, 3, 0)]
+    details = [(1, 1, 111, 1, 0), (5, 1, 222, 2, 0), (5, 2, 333, 3, 0)]
     adnl_entries = dummy_db.add_POlines([*details])
 
     # Final state
@@ -131,7 +132,7 @@ def test_add_PO_lines(dummy_db):
     last_items_created = (
         dummy_db
         ._cur
-        .execute("SELECT po_id, sku, qty_ordered, qty_delivered FROM po_line ORDER BY id DESC LIMIT 3")
+        .execute("SELECT po_id, position, sku, qty_ordered, qty_delivered FROM po_line ORDER BY id DESC LIMIT 3")
         .fetchall()
     )
         
@@ -163,7 +164,7 @@ def test_add_SO_lines(dummy_db):
     ini_num_entries = dummy_db._cur.execute("SELECT COUNT(*) FROM so_line;").fetchone()[0]
 
     # Change
-    details = [(1, 111, 1, 0), (5, 222, 2, 0), (5, 333, 3, 0)]
+    details = [(1, 1, 111, 1, 0), (5, 1, 222, 2, 0), (5, 2, 333, 3, 0)]
     adnl_entries = dummy_db.add_SOlines([*details])
 
     # Final state
@@ -171,7 +172,7 @@ def test_add_SO_lines(dummy_db):
     last_items_created = (
         dummy_db
         ._cur
-        .execute("SELECT so_id, sku, qty_ordered, qty_delivered FROM so_line ORDER BY id DESC LIMIT 3")
+        .execute("SELECT so_id, position, sku, qty_ordered, qty_delivered FROM so_line ORDER BY id DESC LIMIT 3")
         .fetchall()
     )
         

@@ -9,10 +9,15 @@ Class SBB_DBAdmin - methods:
     add_SOlines
     edit_SOlines
 
-    add_supplier
-    add_customer
+    add_external_entity
     add_sku
-    first_time_setup
+
+    is_entity
+    is_sku
+
+    close_connection
+    is_db_setup
+    setup_db
 """
 
 import sqlite3
@@ -53,8 +58,8 @@ class SBB_DBAdmin():
     def add_POlines(self, PO_lines: list) -> int:
         self._cur.executemany("""
                               INSERT INTO po_line 
-                              (po_id, sku, qty_ordered, qty_delivered)
-                              VALUES (?, ?, ?, ?);
+                              (po_id, position, sku, qty_ordered, qty_delivered)
+                              VALUES (?, ?, ?, ?, ?);
                               """,
                               PO_lines)
         self._con.commit()
@@ -76,8 +81,8 @@ class SBB_DBAdmin():
     def add_SOlines(self, SO_lines: list) -> int:
         self._cur.executemany("""
                               INSERT INTO so_line 
-                              (so_id, sku, qty_ordered, qty_delivered)
-                              VALUES (?, ?, ?, ?);
+                              (so_id, position, sku, qty_ordered, qty_delivered)
+                              VALUES (?, ?, ?, ?, ?);
                               """,
                               SO_lines)
         self._con.commit()
@@ -167,6 +172,7 @@ class SBB_DBAdmin():
                           CREATE TABLE IF NOT EXISTS po_line (
                               id INTEGER PRIMARY KEY,
                               po_id INTEGER NOT NULL,
+                              position INTEGER NOT NULL,
                               sku INTEGER NOT NULL,
                               qty_ordered INTEGER NOT NULL,
                               qty_delivered INTEGER NOT NULL
@@ -186,6 +192,7 @@ class SBB_DBAdmin():
                           CREATE TABLE IF NOT EXISTS so_line (
                               id INTEGER PRIMARY KEY,
                               so_id INTEGER NOT NULL,
+                              position INTEGER NOT NULL,
                               sku INTEGER NOT NULL,
                               qty_ordered INTEGER NOT NULL,
                               qty_delivered INTEGER NOT NULL
