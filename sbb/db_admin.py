@@ -54,6 +54,15 @@ class SBB_DBAdmin():
                           [supplier_id])
         self._con.commit()
         return self._cur.lastrowid
+    
+    def get_PO(self, po_id):
+        po_info = (
+            self._cur
+            .execute("SELECT supplier_id FROM purchase_order WHERE id = ?", [(po_id)])
+            .fetchone()
+        )
+        return {'supplier_id': po_info[0]}
+
 
     def add_POlines(self, PO_lines: list) -> int:
         self._cur.executemany("""
@@ -64,6 +73,14 @@ class SBB_DBAdmin():
                               PO_lines)
         self._con.commit()
         return self._cur.rowcount
+    
+    def get_POlines(self, po_id):
+        po_lines = (
+            self._cur
+            .execute("SELECT position, sku, qty_ordered, qty_delivered FROM po_line WHERE po_id = ?", [(po_id)])
+            .fetchall()
+        )
+        return po_lines
 
     def edit_POlines(self, PO_lines: dict) -> bool:
         pass

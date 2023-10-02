@@ -63,6 +63,10 @@ class StockBackbone():
 
         return po_id
 
+    def get_PO(self, po_id):
+        po_info = self._db.get_PO(po_id)
+        po_info['lines'] = self._db.get_POlines(po_id)
+        return po_info
 
     def receive_PO(self, PO_id: int) -> bool:
         pass
