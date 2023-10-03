@@ -153,3 +153,41 @@ def test_get_order_lines(dummy_db):
     info_received = dummy_db.get_order_lines(1)
     assert [i[1:] for i in info_received] == [i[1:] for i in details]
 
+
+def test_set_inventory_level(dummy_db):
+    # The change
+    sku_qty = [[1, 5], [2, 1], [3, 10]]
+    num_records = dummy_db.set_inventory_level(sku_qty)
+
+    # Final state
+    entries = dummy_db._cur.execute("SELECT position, sku, qty FROM inventory WHERE sku in (1, 2, 3);").fetchall()
+    entries = [list(i[1:]) for i in entries]
+    
+    assert (num_records == 3) and (sku_qty == entries)
+
+def test_update_inventory_level(dummy_db):
+    # Setup
+    sku_qty = [[1, 5], [2, 1], [3, 10], [4, 20], [100, 1]]
+    dummy_db.set_inventory_level(sku_qty)
+
+    # The change
+    changes = [[6, 1], [2, 5]]
+    dummy_db.update_inventory_level(changes)
+
+    # Final state
+    entries = dummy_db._cur.execute("SELECT position, sku, qty FROM inventory WHERE position in (1, 5);").fetchall()
+    entries = [[i[-1], i[0]] for i in entries]
+
+    assert changes == entries
+
+def test_get_inventory_level(dummy_db):
+    # Setup
+    sku_qty = [[1, 5], [2, 1], [3, 10], [4, 20], [100, 1]]
+    dummy_db.set_inventory_level(sku_qty)
+
+    inv_position = dummy_db.get_inventory_level([i[0] for i in sku_qty])
+    inv_position = [list(i[1:]) for i in inv_position]
+
+    assert sku_qty == inv_position
+
+

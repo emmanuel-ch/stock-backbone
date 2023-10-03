@@ -89,6 +89,32 @@ class SBB_DBAdmin():
                               """,
                               data)
 
+    
+    
+    def set_inventory_level(self, sku_qty: list) -> int:
+        self._cur.executemany("""
+                              INSERT INTO inventory 
+                              (sku, qty)
+                              VALUES (?, ?);
+                              """,
+                              sku_qty)
+        self._con.commit()
+        return self._cur.rowcount
+
+    def update_inventory_level(self, pos_qty: dict) -> int:
+        self._cur.executemany("""
+                              UPDATE inventory SET
+                                  qty = ?
+                              WHERE position = ?
+                              """,
+                              pos_qty)
+
+    def get_inventory_level(self, skus: list) -> list:
+        return (
+            self._cur
+            .execute(f"SELECT position, sku, qty FROM inventory WHERE sku in ({','.join(len(skus)*['?'])})", skus)
+            .fetchall()
+        )
 
     ##############################
     ########## Configuration #####
@@ -189,7 +215,8 @@ class SBB_DBAdmin():
         # Inventory positions
         self._cur.execute("""
                           CREATE TABLE IF NOT EXISTS inventory (
-                              sku INTEGER PRIMARY KEY,
+                              position INTEGER PRIMARY KEY,
+                              sku INTEGER NOT NULL,
                               qty INTEGER NOT NULL
                           );
                           """)
