@@ -3,7 +3,8 @@ Defines objects used through the software.
 """
 
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Self
+
 
 @dataclass
 class OrderLine:
@@ -14,7 +15,7 @@ class OrderLine:
     qty_ordered: int = 0
     qty_delivered: int = 0
 
-    def is_like(self, other):
+    def is_like(self, other: Self) -> bool:  # Method to check equality except on OrderLine id
         return (
             (self.order_id == other.order_id)
             and (self.position == other.position)
@@ -31,7 +32,7 @@ class Order:
     entity_id: int = 0
     lines: List[OrderLine] = field(default_factory=list)
 
-    def is_like(self, other):
+    def is_like(self, other: Self) -> bool:  # Method to check equality except on Order id
         return (
             (self.order_type == other.order_type)
             and (self.entity_id == other.entity_id)
