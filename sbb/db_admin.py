@@ -89,7 +89,33 @@ class SBB_DBAdmin():
                               """,
                               data)
 
-    
+    def change_inventory(self, change_code, data):
+        match change_code:
+            case '101':  # Increase inventory because of PO-receipt - data contains List[List[sku, qty], ...]
+                inventory_lvl = self.get_inventory_level([i[0] for i in data])  # List[Tuple(position, sku, qty), ...]
+
+                inv_position_to_create = list()
+                inv_position_to_update = list()
+                for item in data:
+                    search_existing_inv = [inv for inv in inventory_lvl if inv[1] == item[0]]
+                    if len(search_existing_inv) == 1:
+                        inv = search_existing_inv[0]
+                        inv_position_to_update.append([inv[2] + item[1], inv[0]])
+                    elif len(search_existing_inv) == 1:
+                        raise Exception(f'Unexpected number of inventory positions')
+                    else:
+                        inv_position_to_create.append(item)
+                
+                success = True
+                if len(inv_position_to_create) > 0:
+                    new_lines = self.set_inventory_level(inv_position_to_create)
+                    success = new_lines == len(inv_position_to_create)
+                
+                if len(inv_position_to_update) > 0:
+                    self.update_inventory_level(inv_position_to_update)
+
+                return success
+
     
     def set_inventory_level(self, sku_qty: list) -> int:
         self._cur.executemany("""

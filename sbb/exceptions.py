@@ -32,3 +32,10 @@ class OrderQtyIncorrect(SBB_Exception):
     def __init__(self, order_type: str, order_lines: int, *args, **kwargs):
         msg = f'Impossible to make {order_type} because of invalid order lines: {order_lines}'
         super().__init__(msg, *args, **kwargs)
+
+class WrongOrderType(SBB_Exception):
+    """Order lines incorrect."""
+    def __init__(self, expected_order_type: str, actual_order_type: str, *args, **kwargs):
+        msg = f'Expected order type {expected_order_type} but received order type {actual_order_type}'
+        super().__init__(msg, *args, **kwargs)
+

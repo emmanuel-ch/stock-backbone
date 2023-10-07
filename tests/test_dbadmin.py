@@ -191,3 +191,19 @@ def test_get_inventory_level(dummy_db):
     assert sku_qty == inv_position
 
 
+def test_change_inventory_101(dummy_db):
+    # Define ini state
+    sku_qty = [[1, 1], [2, 4], [3, 9]]
+    dummy_db.set_inventory_level(sku_qty)
+
+    # The change
+    data = [[1, 1], [3, 3], [4, 1], [6, 10]]
+    dummy_db.change_inventory('101', data)
+
+    # Final state
+    expected_inventory = [[1, 2], [2, 4], [3, 12], [4, 1], [6, 10]]
+    new_inv = dummy_db.get_inventory_level([1,2,3,4,6])
+    new_inv = [list(item[1:]) for item in new_inv]
+
+    assert new_inv == expected_inventory
+

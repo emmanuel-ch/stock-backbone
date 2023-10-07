@@ -3,7 +3,6 @@ Tests StockBackbone and StockBackbone_Admin methods
 """
 
 import pytest
-from pathlib import Path
 
 from sbb.sbb import StockBackbone, validate_text_input
 from sbb.exceptions import EntityDoesntExist, SKUDoesntExist, OrderQtyIncorrect
@@ -69,7 +68,7 @@ def test_receive_PO(dummy_sbb):
         ])
     
     lines_before = dummy_sbb.get_order(po_id)['lines']
-    dummy_sbb.set_order('full-delivery', po_id)
+    dummy_sbb.receive_PO('full-delivery', po_id)
     lines_after = dummy_sbb.get_order(po_id)['lines']
 
     assert all([lines_before[i][3] == lines_after[i][4] for i in range(len(lines_before))])

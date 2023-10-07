@@ -6,6 +6,7 @@ Class StockBackbone - methods:
     make_SO
     _make_order
     get_order
+    receive_PO
 
     create_supplier
     create customer
@@ -20,7 +21,11 @@ validate_text_input
 import string
 
 from sbb import db_admin
-from sbb.exceptions import SBB_Exception, UserInputInvalid, EntityDoesntExist, SKUDoesntExist, OrderQtyIncorrect
+from sbb.exceptions import (
+    SBB_Exception, UserInputInvalid,
+    EntityDoesntExist, SKUDoesntExist,
+    OrderQtyIncorrect, WrongOrderType
+)
 
 
 class StockBackbone():
@@ -44,6 +49,7 @@ class StockBackbone():
         return self._make_order('sale', 'customer', customerer_id, SO_lines)
 
     def _make_order(self, order_type: str, entity_type: str, entity_id: int, order_lines: list) -> int:
+        # FIXME: Prevent having 2 lines with same SKU
         if not self.is_entity(entity_id):
             raise EntityDoesntExist(entity_type, entity_id)
         
@@ -75,13 +81,23 @@ class StockBackbone():
         order_info['lines'] = self._db.get_order_lines(order_id)
         return order_info
     
-    def set_order(self, mode: str, order_id: int) -> bool:
+    def receive_PO(self, mode: str, order_id: int) -> bool:
         if mode == 'full-delivery':
-            order_lines = self.get_order(order_id)['lines']
-            data = [[i[3], i[0]] for i in order_lines]
-            self._db.set_order_lines('delivered_qty', data)
+            the_order = self.get_order(order_id)
+            if the_order['order_type'] != 'purchase':
+                raise WrongOrderType('purchase', the_order['order_type'])
+            
+            # Add inventory to stock
+            add_inv = self._db.change_inventory('101', [orderline[2:4] for orderline in the_order['lines']])
+
+            if add_inv:
+                # Update PO
+                data_update_PO = [[i[3], i[0]] for i in the_order['lines']]
+                self._db.set_order_lines('delivered_qty', data_update_PO)
+            else:
+                raise SBB_Exception('Unable to increase inventory')
         else:
-            SBB_Exception('Unexpected exception: order-setting order not expected')
+            raise SBB_Exception('Unexpected exception: order-setting order not expected')
 
 
     ##############################
