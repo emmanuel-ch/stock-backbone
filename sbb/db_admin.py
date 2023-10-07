@@ -6,6 +6,12 @@ Class SBB_DBAdmin - methods:
     get_order
     add_order_lines
     get_order_lines
+    set_order_lines
+
+    change_inventory
+    set_inventory_level
+    update_inventory_level
+    get_inventory_level
 
     add_external_entity
     add_sku
@@ -19,6 +25,8 @@ Class SBB_DBAdmin - methods:
 """
 
 import sqlite3
+
+from sbb.sbb_objects import Order, OrderLine, StockPosition
 
 
 
@@ -43,13 +51,13 @@ class SBB_DBAdmin():
     ########## Regular use #######
     ##############################
 
-    def add_order(self, order_type: str, entity_id: str) -> int:
+    def add_order(self, the_order: Order) -> int:
         self._cur.execute("""
                           INSERT INTO orders 
                           (order_type, entity_id)
                           VALUES (?, ?);
                           """,
-                          [order_type, entity_id])
+                          [the_order.order_type, the_order.entity_id])
         self._con.commit()
         return self._cur.lastrowid
     
@@ -59,7 +67,7 @@ class SBB_DBAdmin():
             .execute("SELECT order_type, entity_id FROM orders WHERE id = ?", [order_id])
             .fetchone()
         )
-        return {'order_type': order[0], 'entity_id': order[1]}
+        return Order(order_type=order[0], entity_id=order[1])
 
 
     def add_order_lines(self, order_lines: list) -> int:
@@ -68,17 +76,20 @@ class SBB_DBAdmin():
                               (order_id, position, sku, qty_ordered, qty_delivered)
                               VALUES (?, ?, ?, ?, ?);
                               """,
-                              order_lines)
+                              [
+                                  [ol.order_id, ol.position, ol.sku, ol.qty_ordered, ol.qty_delivered]
+                                  for ol in order_lines
+                              ])
         self._con.commit()
         return self._cur.rowcount
     
     def get_order_lines(self, order_id: int) -> list:
         order_lines = (
             self._cur
-            .execute("SELECT id, position, sku, qty_ordered, qty_delivered FROM order_line WHERE order_id = ?", [order_id])
+            .execute("SELECT id, order_id, position, sku, qty_ordered, qty_delivered FROM order_line WHERE order_id = ?", [order_id])
             .fetchall()
         )
-        return order_lines
+        return [OrderLine(*line) for line in order_lines]
     
     def set_order_lines(self, mode: str, data: list) -> None:
         if mode == 'delivered_qty':
