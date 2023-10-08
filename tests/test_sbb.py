@@ -34,7 +34,7 @@ def test_validate_text_input(field_type, test_input, expected_outcome):
 def test_make_PO_invalid_supplier_id(dummy_sbb):
     sku = dummy_sbb.create_sku('A product')
     with pytest.raises(EntityDoesntExist):
-        dummy_sbb.make_PO(666, {sku + 1, 5})
+        dummy_sbb.make_PO(666, [(sku + 1, 5)])
 
 def test_make_PO_invalid_sku(dummy_sbb):
     supplier_id = dummy_sbb.create_supplier('A supplier')
@@ -67,11 +67,15 @@ def test_receive_PO(dummy_sbb):
         (sku[2], 100)
         ])
     
-    lines_before = dummy_sbb.get_order(po_id)['lines']
+    lines_before = dummy_sbb.get_order(po_id).lines
     dummy_sbb.receive_PO('full-delivery', po_id)
-    lines_after = dummy_sbb.get_order(po_id)['lines']
+    lines_after = dummy_sbb.get_order(po_id).lines
 
-    assert all([lines_before[i][3] == lines_after[i][4] for i in range(len(lines_before))])
+    assert all([
+        (lines_before[i].position == lines_after[i].position)
+        and (lines_before[i].qty_ordered == lines_after[i].qty_delivered)
+        for i in range(len(lines_before))
+        ])
 
 
 ##############################
@@ -81,7 +85,7 @@ def test_receive_PO(dummy_sbb):
 def test_make_SO_invalid_customer_id(dummy_sbb):
     sku = dummy_sbb.create_sku('A product')
     with pytest.raises(EntityDoesntExist):
-        dummy_sbb.make_SO(666, {sku + 1, 5})
+        dummy_sbb.make_SO(666, [(sku + 1, 5)])
 
 def test_make_SO_invalid_sku(dummy_sbb):
     customer_id = dummy_sbb.create_customer('A customer')

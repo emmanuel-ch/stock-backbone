@@ -27,6 +27,8 @@ from sbb.exceptions import (
     OrderQtyIncorrect, WrongOrderType
 )
 
+from sbb.sbb_objects import Order, OrderLine, StockPosition
+
 
 class StockBackbone():
 
@@ -43,57 +45,66 @@ class StockBackbone():
     ##############################
 
     def make_PO(self, supplier_id: int, PO_lines: list) -> int:
-        return self._make_order('purchase', 'supplier', supplier_id, PO_lines)
+        return self._make_order(Order(
+            order_type='purchase',
+            entity_id=supplier_id,
+            lines=[OrderLine(sku=item[0], qty_ordered=item[1]) for item in PO_lines]
+        ))
 
-    def make_SO(self, customerer_id: int, SO_lines: list) -> int:
-        return self._make_order('sale', 'customer', customerer_id, SO_lines)
+    def make_SO(self, customer_id: int, SO_lines: list) -> int:
+        return self._make_order(Order(
+            order_type='purchase',
+            entity_id=customer_id,
+            lines=[OrderLine(sku=item[0], qty_ordered=item[1]) for item in SO_lines]
+        ))
 
-    def _make_order(self, order_type: str, entity_type: str, entity_id: int, order_lines: list) -> int:
+    def _make_order(self, the_order: Order) -> int:
         # FIXME: Prevent having 2 lines with same SKU
-        if not self.is_entity(entity_id):
-            raise EntityDoesntExist(entity_type, entity_id)
+        if not self.is_entity(the_order.entity_id):
+            raise EntityDoesntExist(the_order.entity_id)
         
-        lines = []
         position = 1
-        for order_line in order_lines:
-            if not self.is_sku(order_line[0]):
-                raise SKUDoesntExist(order_line[0])
+        for order_line in the_order.lines:
+            if not self.is_sku(order_line.sku):
+                raise SKUDoesntExist(order_line.sku)
             
             try:
-                qty_ordered = float(order_line[1])
+                order_line.qty_ordered = float(order_line.qty_ordered)
             except ValueError:
-                raise OrderQtyIncorrect(*order_line)
+                raise OrderQtyIncorrect(the_order.order_type, order_line)
             
-            lines.append((position, order_line[0], qty_ordered, 0))
+            order_line.position = position
             position += 1
         
         # Input validated
-        order_id = self._db.add_order(order_type, entity_id)
-        lines = [(order_id, *line_content) for line_content in lines]
-        num_lines_added = self._db.add_order_lines(lines)
-        if num_lines_added != len(order_lines):
-            raise SBB_Exception(f'Unexpected exception: {num_lines_added} lines created VS. expected {len(order_lines)}')
+        order_id = self._db.add_order(the_order)
+        for ol in the_order.lines:
+            ol.order_id = order_id
+        num_lines_added = self._db.add_order_lines(the_order.lines)
+        if num_lines_added != len(the_order.lines):
+            raise SBB_Exception(f'Unexpected exception: {num_lines_added} lines created VS. expected {len(the_order.lines)}')
 
         return order_id
 
     def get_order(self, order_id):
-        order_info = self._db.get_order(order_id)
-        order_info['lines'] = self._db.get_order_lines(order_id)
-        return order_info
+        the_order = self._db.get_order(order_id)
+        the_order.lines = self._db.get_order_lines(order_id)
+        return the_order
     
     def receive_PO(self, mode: str, order_id: int) -> bool:
         if mode == 'full-delivery':
             the_order = self.get_order(order_id)
-            if the_order['order_type'] != 'purchase':
-                raise WrongOrderType('purchase', the_order['order_type'])
+            if the_order.order_type != 'purchase':
+                raise WrongOrderType('purchase', the_order.order_type)
             
             # Add inventory to stock
-            add_inv = self._db.change_inventory('101', [orderline[2:4] for orderline in the_order['lines']])
+            add_inv = self._db.change_inventory('101', [[ol.sku, ol.qty_ordered] for ol in the_order.lines])
 
             if add_inv:
                 # Update PO
-                data_update_PO = [[i[3], i[0]] for i in the_order['lines']]
-                self._db.set_order_lines('delivered_qty', data_update_PO)
+                for ol in the_order.lines:
+                    ol.qty_delivered = ol.qty_ordered
+                self._db.set_order_lines('delivered_qty', the_order.lines)
             else:
                 raise SBB_Exception('Unable to increase inventory')
         else:

@@ -98,7 +98,10 @@ class SBB_DBAdmin():
                                   qty_delivered = ?
                               WHERE id = ?
                               """,
-                              data)
+                              [
+                                  [ol.qty_delivered, ol.position]
+                                  for ol in data
+                              ])
 
     def change_inventory(self, change_code, data):
         match change_code:

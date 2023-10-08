@@ -17,8 +17,8 @@ class UserInputInvalid(SBB_Exception):
 
 class EntityDoesntExist(SBB_Exception):
     """Requested entity doesn't exist."""
-    def __init__(self, entity_type: str, entity_id: int, *args, **kwargs):
-        msg = f'Requested {entity_type} doesn\'t exist: {entity_id}'
+    def __init__(self, entity_id: int, *args, **kwargs):
+        msg = f'Requested entity doesn\'t exist: {entity_id}'
         super().__init__(msg, *args, **kwargs)
 
 class SKUDoesntExist(SBB_Exception):
