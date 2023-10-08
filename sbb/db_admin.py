@@ -24,6 +24,7 @@ Class SBB_DBAdmin - methods:
     setup_db
 """
 
+from typing import Any
 import sqlite3
 
 from sbb.sbb_objects import Order, OrderLine, StockPosition
@@ -61,7 +62,7 @@ class SBB_DBAdmin():
         self._con.commit()
         return self._cur.lastrowid
     
-    def get_order(self, order_id):
+    def get_order(self, order_id: int) -> Order:
         order = (
             self._cur
             .execute("SELECT order_type, entity_id FROM orders WHERE id = ?", [order_id])
@@ -70,7 +71,7 @@ class SBB_DBAdmin():
         return Order(order_type=order[0], entity_id=order[1])
 
 
-    def add_order_lines(self, order_lines: list) -> int:
+    def add_order_lines(self, order_lines: list[OrderLine]) -> int:
         self._cur.executemany("""
                               INSERT INTO order_line 
                               (order_id, position, sku, qty_ordered, qty_delivered)
@@ -83,7 +84,7 @@ class SBB_DBAdmin():
         self._con.commit()
         return self._cur.rowcount
     
-    def get_order_lines(self, order_id: int) -> list:
+    def get_order_lines(self, order_id: int) -> list[OrderLine]:
         order_lines = (
             self._cur
             .execute("SELECT id, order_id, position, sku, qty_ordered, qty_delivered FROM order_line WHERE order_id = ?", [order_id])
@@ -103,7 +104,7 @@ class SBB_DBAdmin():
                                   for ol in data
                               ])
 
-    def change_inventory(self, change_code, data):
+    def change_inventory(self, change_code: str, data: list[Any]) -> bool:
         match change_code:
             case '101':  # Increase inventory because of PO-receipt - data contains List[List[sku, qty], ...]
                 inventory_lvl = self.get_inventory_level([i[0] for i in data])  # List[Tuple(position, sku, qty), ...]

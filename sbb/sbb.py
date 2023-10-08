@@ -44,14 +44,14 @@ class StockBackbone():
     ########## Regular use #######
     ##############################
 
-    def make_PO(self, supplier_id: int, PO_lines: list) -> int:
+    def make_PO(self, supplier_id: int, PO_lines: list[OrderLine]) -> int:
         return self._make_order(Order(
             order_type='purchase',
             entity_id=supplier_id,
             lines=[OrderLine(sku=item[0], qty_ordered=item[1]) for item in PO_lines]
         ))
 
-    def make_SO(self, customer_id: int, SO_lines: list) -> int:
+    def make_SO(self, customer_id: int, SO_lines: list[OrderLine]) -> int:
         return self._make_order(Order(
             order_type='purchase',
             entity_id=customer_id,
@@ -86,7 +86,7 @@ class StockBackbone():
 
         return order_id
 
-    def get_order(self, order_id):
+    def get_order(self, order_id: int) -> Order:
         the_order = self._db.get_order(order_id)
         the_order.lines = self._db.get_order_lines(order_id)
         return the_order
