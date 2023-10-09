@@ -27,7 +27,7 @@ Class SBB_DBAdmin - methods:
 from typing import Any
 import sqlite3
 
-from sbb.sbb_objects import Order, OrderLine, StockPosition
+from sbb.sbb_objects import Order, OrderLine, StockPosition, StockChange
 
 
 
@@ -104,22 +104,21 @@ class SBB_DBAdmin():
                                   for ol in data
                               ])
 
-    def change_inventory(self, change_code: str, data: list[Any]) -> bool:
+    def change_inventory(self, change_code: str, data: list[StockChange]) -> bool:
         match change_code:
-            case '101':  # Increase inventory because of PO-receipt - data contains List[List[sku, qty], ...]
-                inventory_lvl = self.get_inventory_level([i[0] for i in data])  # List[Tuple(position, sku, qty), ...]
-
+            case '101':  # Increase inventory because of PO-receipt
+                inventory_levels = self.get_inventory_level([item.sku for item in data])  # List[StockPosition, ...]
                 inv_position_to_create = list()
                 inv_position_to_update = list()
                 for item in data:
-                    search_existing_inv = [inv for inv in inventory_lvl if inv[1] == item[0]]
+                    search_existing_inv = [inv for inv in inventory_levels if inv.sku == item.sku]
                     if len(search_existing_inv) == 1:
                         inv = search_existing_inv[0]
-                        inv_position_to_update.append([inv[2] + item[1], inv[0]])
+                        inv_position_to_update.append(StockChange(position=inv.position, qty=inv.qty + item.qty))
                     elif len(search_existing_inv) == 1:
                         raise Exception(f'Unexpected number of inventory positions')
                     else:
-                        inv_position_to_create.append(item)
+                        inv_position_to_create.append(StockPosition(sku=item.sku, qty=item.qty))
                 
                 success = True
                 if len(inv_position_to_create) > 0:
@@ -132,30 +131,41 @@ class SBB_DBAdmin():
                 return success
 
     
-    def set_inventory_level(self, sku_qty: list) -> int:
+    def set_inventory_level(self, new_positions: list[StockPosition]) -> int:
         self._cur.executemany("""
                               INSERT INTO inventory 
                               (sku, qty)
                               VALUES (?, ?);
                               """,
-                              sku_qty)
+                              [
+                                  [position.sku, position.qty]
+                                  for position in new_positions
+                              ])
         self._con.commit()
         return self._cur.rowcount
 
-    def update_inventory_level(self, pos_qty: dict) -> int:
+    def update_inventory_level(self, updated_positions: list[StockChange]) -> None:
         self._cur.executemany("""
                               UPDATE inventory SET
                                   qty = ?
-                              WHERE position = ?
+                              WHERE position_id = ?
                               """,
-                              pos_qty)
+                              [
+                                  [position.qty, position.position]
+                                  for position in updated_positions
+                              ])
 
-    def get_inventory_level(self, skus: list) -> list:
-        return (
+    def get_inventory_level(self, skus: list[int]) -> list[StockPosition]:
+        lines = (
             self._cur
-            .execute(f"SELECT position, sku, qty FROM inventory WHERE sku in ({','.join(len(skus)*['?'])})", skus)
+            .execute(f"SELECT position_id, sku, qty FROM inventory WHERE sku in ({','.join(len(skus)*['?'])})", skus)
             .fetchall()
         )
+
+        return [
+            StockPosition(position=line[0], sku=line[1], qty=line[2])
+            for line in lines
+            ]
 
     ##############################
     ########## Configuration #####
@@ -210,7 +220,7 @@ class SBB_DBAdmin():
         elif len(checker) == 1:
             return True
         raise Exception(f'Unexpected exception: More than 1 sku for: {sku}')
-
+    
     ##############################
     ########## Setup #############
     ##############################
@@ -256,7 +266,7 @@ class SBB_DBAdmin():
         # Inventory positions
         self._cur.execute("""
                           CREATE TABLE IF NOT EXISTS inventory (
-                              position INTEGER PRIMARY KEY,
+                              position_id INTEGER PRIMARY KEY,
                               sku INTEGER NOT NULL,
                               qty INTEGER NOT NULL
                           );

@@ -6,7 +6,7 @@ import pytest
 from pathlib import Path
 
 from sbb import db_admin
-from sbb.sbb_objects import Order, OrderLine, StockPosition
+from sbb.sbb_objects import Order, OrderLine, StockPosition, StockChange
 
 
 @pytest.fixture
@@ -174,54 +174,92 @@ def test_get_order_lines(dummy_db):
 
 def test_set_inventory_level(dummy_db):
     # The change
-    sku_qty = [[1, 5], [2, 1], [3, 10]]
-    num_records = dummy_db.set_inventory_level(sku_qty)
+    create_stock_positions = [
+        StockPosition(sku=i, qty=i*i)
+        for i in range(1, 4)
+    ]
+    num_records = dummy_db.set_inventory_level(create_stock_positions)
 
     # Final state
-    entries = dummy_db._cur.execute("SELECT position, sku, qty FROM inventory WHERE sku in (1, 2, 3);").fetchall()
-    entries = [list(i[1:]) for i in entries]
+    entries = dummy_db._cur.execute("SELECT position_id, sku, qty FROM inventory WHERE sku in (1, 2, 3);").fetchall()
     
-    assert (num_records == 3) and (sku_qty == entries)
+    assert (
+        (num_records == 3)
+        and all([
+            (create_stock_positions[i].sku == entries[i][1])
+            and (create_stock_positions[i].qty == entries[i][2])
+            for i in range(3)
+        ])
+    )
 
 def test_update_inventory_level(dummy_db):
     # Setup
-    sku_qty = [[1, 5], [2, 1], [3, 10], [4, 20], [100, 1]]
-    dummy_db.set_inventory_level(sku_qty)
+    create_stock_positions = [
+        StockPosition(sku=i, qty=i*i)
+        for i in range(1, 11)
+    ]
+    dummy_db.set_inventory_level(create_stock_positions)
 
     # The change
-    changes = [[6, 1], [2, 5]]
+    changes = [
+        StockChange(position=6, qty=30),
+        StockChange(position=10, qty=1000)
+        ]
     dummy_db.update_inventory_level(changes)
 
     # Final state
-    entries = dummy_db._cur.execute("SELECT position, sku, qty FROM inventory WHERE position in (1, 5);").fetchall()
-    entries = [[i[-1], i[0]] for i in entries]
+    entries = dummy_db._cur.execute("SELECT position_id, sku, qty FROM inventory WHERE position_id in (6, 10);").fetchall()
 
-    assert changes == entries
+    assert all([
+        changes[i].qty == entries[i][2]
+        for i in range(2)
+    ])
 
 def test_get_inventory_level(dummy_db):
     # Setup
-    sku_qty = [[1, 5], [2, 1], [3, 10], [4, 20], [100, 1]]
-    dummy_db.set_inventory_level(sku_qty)
+    create_stock_positions = [
+        StockPosition(sku=i, qty=i*i)
+        for i in range(1, 11)
+    ]
+    dummy_db.set_inventory_level(create_stock_positions)
 
-    inv_position = dummy_db.get_inventory_level([i[0] for i in sku_qty])
-    inv_position = [list(i[1:]) for i in inv_position]
+    inv_position = dummy_db.get_inventory_level([item.sku for item in create_stock_positions])
 
-    assert sku_qty == inv_position
+    assert all([
+        create_stock_positions[i].is_like(inv_position[i])
+        for i in range(10)
+    ])
 
 
 def test_change_inventory_101(dummy_db):
-    # Define ini state
-    sku_qty = [[1, 1], [2, 4], [3, 9]]
-    dummy_db.set_inventory_level(sku_qty)
+    # Setup
+    create_stock_positions = [
+        StockPosition(sku=i, qty=i*i)
+        for i in range(1, 11)
+    ]
+    dummy_db.set_inventory_level(create_stock_positions)
 
     # The change
-    data = [[1, 1], [3, 3], [4, 1], [6, 10]]
+    data = [
+        StockChange(sku=1, qty=2),
+        StockChange(sku=3, qty=3),
+        StockChange(sku=4, qty=1),
+        StockChange(sku=6, qty=10)
+    ]
     dummy_db.change_inventory('101', data)
 
     # Final state
-    expected_inventory = [[1, 2], [2, 4], [3, 12], [4, 1], [6, 10]]
+    expected_inventory = [
+        StockPosition(sku=1, qty=3),
+        StockPosition(sku=2, qty=4),
+        StockPosition(sku=3, qty=12),
+        StockPosition(sku=4, qty=17),
+        StockPosition(sku=6, qty=46)
+    ]
     new_inv = dummy_db.get_inventory_level([1,2,3,4,6])
-    new_inv = [list(item[1:]) for item in new_inv]
 
-    assert new_inv == expected_inventory
+    assert all([
+        expected_inventory[i].is_like(new_inv[i])
+        for i in range(5)
+    ])
 

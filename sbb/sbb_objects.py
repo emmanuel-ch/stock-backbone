@@ -46,3 +46,16 @@ class StockPosition:
     sku: int = 0
     qty: int = 0
 
+    def is_like(self, other: Self) -> bool:  # Method to check equality except on id
+        return (
+            (self.sku == other.sku)
+            and (self.qty == other.qty)
+        )
+    
+
+@dataclass
+class StockChange:
+    position: int = 0
+    sku: int = 0
+    qty: int = 0
+
