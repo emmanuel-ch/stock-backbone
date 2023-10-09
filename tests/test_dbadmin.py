@@ -155,21 +155,25 @@ def test_add_order_lines(dummy_db):
 def test_get_order(dummy_db):
     order_in = Order(order_type='some_order_type', entity_id=123)
     order_no = dummy_db.add_order(order_in)
-
-    order_retrieved = dummy_db.get_order(order_no)
-    assert order_retrieved == order_in
-
-
-def test_get_order_lines(dummy_db):
     order_lines = [
-        OrderLine(order_id=1, position=1, sku=111, qty_ordered=1),
-        OrderLine(order_id=1, position=2, sku=222, qty_ordered=4),
-        OrderLine(order_id=1, position=3, sku=333, qty_ordered=9)
+        OrderLine(order_id=order_no, position=1, sku=111, qty_ordered=1),
+        OrderLine(order_id=order_no, position=2, sku=222, qty_ordered=4),
+        OrderLine(order_id=order_no, position=3, sku=333, qty_ordered=9)
     ]
-    adnl_entries = dummy_db.add_order_lines(order_lines)
+    _ = dummy_db.add_order_lines(order_lines)
 
-    ol_fetched = dummy_db.get_order_lines(1)
-    assert (adnl_entries == 3) and all([ol.is_like(ol_fetched[i]) for i, ol in enumerate(order_lines)])
+    expected_order = Order(
+        id=order_no,
+        order_type='some_order_type',
+        entity_id=123,
+        lines=[
+            OrderLine(id=0, order_id=0, position=1, sku=111, qty_ordered=1, qty_delivered=0),
+            OrderLine(id=0, order_id=0, position=2, sku=222, qty_ordered=4, qty_delivered=0),
+            OrderLine(id=0, order_id=0, position=3, sku=333, qty_ordered=9, qty_delivered=0)
+            ]
+    )
+    order_fetched = dummy_db.get_order(order_no)
+    assert expected_order == order_fetched
 
 
 def test_set_inventory_level(dummy_db):

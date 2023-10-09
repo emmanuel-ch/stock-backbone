@@ -5,7 +5,6 @@ Class SBB_DBAdmin - methods:
     add_order
     get_order
     add_order_lines
-    get_order_lines
     set_order_lines
 
     change_inventory
@@ -31,11 +30,14 @@ from sbb.sbb_objects import Order, OrderLine, StockPosition, StockChange
 
 
 
-DB_TABLES = ['purchase_order', 'po_line', 'sale_order', 'so_line', 
-             'product', 'inventory', 'external_entity']
+
 
 
 class SBB_DBAdmin():
+    DB_TABLES = [
+        'purchase_order', 'po_line', 'sale_order', 'so_line', 
+        'product', 'inventory', 'external_entity'
+    ]
 
     def __init__(self, db_name: str) -> None:
         if db_name == ':memory:':
@@ -65,10 +67,26 @@ class SBB_DBAdmin():
     def get_order(self, order_id: int) -> Order:
         order = (
             self._cur
-            .execute("SELECT order_type, entity_id FROM orders WHERE id = ?", [order_id])
-            .fetchone()
+            .execute("""
+                     SELECT
+                        orders.id, orders.order_type, orders.entity_id,
+                        ol.position, ol.sku, ol.qty_ordered, ol.qty_delivered
+                     FROM orders
+                     LEFT JOIN order_line AS ol
+                     WHERE orders.id = ?
+                     """, [order_id])
+            .fetchall()
         )
-        return Order(order_type=order[0], entity_id=order[1])
+        return Order(
+            id=order[0][0],
+            order_type=order[0][1],
+            entity_id=order[0][2],
+            lines=[
+                OrderLine(position=ol[3], sku=ol[4], qty_ordered=ol[5], qty_delivered=ol[6])
+                for ol in order
+            ]
+        )
+
 
 
     def add_order_lines(self, order_lines: list[OrderLine]) -> int:
@@ -84,14 +102,6 @@ class SBB_DBAdmin():
         self._con.commit()
         return self._cur.rowcount
     
-    def get_order_lines(self, order_id: int) -> list[OrderLine]:
-        order_lines = (
-            self._cur
-            .execute("SELECT id, order_id, position, sku, qty_ordered, qty_delivered FROM order_line WHERE order_id = ?", [order_id])
-            .fetchall()
-        )
-        return [OrderLine(*line) for line in order_lines]
-    
     def set_order_lines(self, mode: str, data: list) -> None:
         if mode == 'delivered_qty':
             self._cur.executemany("""
@@ -103,6 +113,7 @@ class SBB_DBAdmin():
                                   [ol.qty_delivered, ol.position]
                                   for ol in data
                               ])
+
 
     def change_inventory(self, change_code: str, data: list[StockChange]) -> bool:
         match change_code:
@@ -231,7 +242,7 @@ class SBB_DBAdmin():
     def is_db_setup(self) -> bool:
         res = self._cur.execute("SELECT name FROM sqlite_master").fetchall()
         list_tables = [item[0] for item in res]
-        return all([expected_table in list_tables for expected_table in DB_TABLES])
+        return all([expected_table in list_tables for expected_table in SBB_DBAdmin.DB_TABLES])
     
     def setup_db(self) -> None:
         # Orders

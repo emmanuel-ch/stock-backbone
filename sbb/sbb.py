@@ -26,8 +26,7 @@ from sbb.exceptions import (
     EntityDoesntExist, SKUDoesntExist,
     OrderQtyIncorrect, WrongOrderType
 )
-
-from sbb.sbb_objects import Order, OrderLine, StockPosition
+from sbb.sbb_objects import Order, OrderLine, StockPosition, StockChange
 
 
 class StockBackbone():
@@ -88,7 +87,6 @@ class StockBackbone():
 
     def get_order(self, order_id: int) -> Order:
         the_order = self._db.get_order(order_id)
-        the_order.lines = self._db.get_order_lines(order_id)
         return the_order
     
     def receive_PO(self, mode: str, order_id: int) -> bool:
@@ -98,7 +96,10 @@ class StockBackbone():
                 raise WrongOrderType('purchase', the_order.order_type)
             
             # Add inventory to stock
-            add_inv = self._db.change_inventory('101', [[ol.sku, ol.qty_ordered] for ol in the_order.lines])
+            add_inv = self._db.change_inventory('101', [
+                StockChange(sku=ol.sku, qty=ol.qty_ordered)
+                for ol in the_order.lines
+                ])
 
             if add_inv:
                 # Update PO
