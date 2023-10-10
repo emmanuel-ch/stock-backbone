@@ -26,7 +26,7 @@ from sbb.exceptions import (
     EntityDoesntExist, SKUDoesntExist,
     OrderQtyIncorrect, WrongOrderType
 )
-from sbb.sbb_objects import Order, OrderLine, StockPosition, StockChange
+from sbb.sbb_objects import Order, OrderLine, StockChange
 
 
 class StockBackbone():
@@ -47,14 +47,20 @@ class StockBackbone():
         return self._make_order(Order(
             order_type='purchase',
             entity_id=supplier_id,
-            lines=[OrderLine(sku=item[0], qty_ordered=item[1]) for item in PO_lines]
+            lines=[
+                OrderLine(sku=item[0], qty_ordered=item[1], qty_delivered=0)
+                for item in PO_lines
+            ]
         ))
 
     def make_SO(self, customer_id: int, SO_lines: list[OrderLine]) -> int:
         return self._make_order(Order(
             order_type='purchase',
             entity_id=customer_id,
-            lines=[OrderLine(sku=item[0], qty_ordered=item[1]) for item in SO_lines]
+            lines=[
+                OrderLine(sku=item[0], qty_ordered=item[1], qty_delivered=0)
+                for item in SO_lines
+            ]
         ))
 
     def _make_order(self, the_order: Order) -> int:
@@ -81,7 +87,10 @@ class StockBackbone():
             ol.order_id = order_id
         num_lines_added = self._db.add_order_lines(the_order.lines)
         if num_lines_added != len(the_order.lines):
-            raise SBB_Exception(f'Unexpected exception: {num_lines_added} lines created VS. expected {len(the_order.lines)}')
+            raise SBB_Exception(
+                f'Unexpected exception: {num_lines_added} lines created ',
+                f'VS. expected {len(the_order.lines)}'
+                )
 
         return order_id
 
@@ -109,7 +118,9 @@ class StockBackbone():
             else:
                 raise SBB_Exception('Unable to increase inventory')
         else:
-            raise SBB_Exception('Unexpected exception: order-setting order not expected')
+            raise SBB_Exception(
+                'Unexpected exception: order-setting order not expected'
+                )
 
 
     ##############################
@@ -162,5 +173,9 @@ def validate_text_input(value: str, input_type: str) -> bool:
             return False
     
     acceptable_name = ''.join(char for char in value if char in valid_chars)
-    return (value == acceptable_name) and (len(value) > 0) and (len(value) <= max_length)
+    return (
+        (value == acceptable_name)
+        and (len(value) > 0)
+        and (len(value) <= max_length)
+    )
 

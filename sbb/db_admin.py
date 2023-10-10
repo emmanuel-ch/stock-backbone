@@ -87,8 +87,6 @@ class SBB_DBAdmin():
             ]
         )
 
-
-
     def add_order_lines(self, order_lines: list[OrderLine]) -> int:
         self._cur.executemany("""
                               INSERT INTO order_line 

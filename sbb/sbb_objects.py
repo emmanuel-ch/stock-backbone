@@ -3,17 +3,17 @@ Defines objects used through the software.
 """
 
 from dataclasses import dataclass, field
-from typing import List, Self
+from typing import Self
 
 
 @dataclass
 class OrderLine:
-    id: int = 0
-    order_id: int = 0
-    position: int = 0
-    sku: int = 0
-    qty_ordered: int = 0
-    qty_delivered: int = 0
+    id: int = None
+    order_id: int = None
+    position: int = None
+    sku: int = None
+    qty_ordered: int = None
+    qty_delivered: int = None
 
     def is_like(self, other: Self) -> bool:  # Method to check equality except on OrderLine id
         return (
@@ -27,10 +27,10 @@ class OrderLine:
 
 @dataclass
 class Order:
-    id: int = 0
-    order_type: str = 0
-    entity_id: int = 0
-    lines: List[OrderLine] = field(default_factory=list)
+    id: int = None
+    order_type: str = None
+    entity_id: int = None
+    lines: list[OrderLine] = field(default_factory=list)
 
     def is_like(self, other: Self) -> bool:  # Method to check equality except on Order id
         return (
@@ -42,9 +42,9 @@ class Order:
 
 @dataclass
 class StockPosition:
-    position: int = 0
-    sku: int = 0
-    qty: int = 0
+    position: int = None
+    sku: int = None
+    qty: int = None
 
     def is_like(self, other: Self) -> bool:  # Method to check equality except on id
         return (
@@ -55,7 +55,7 @@ class StockPosition:
 
 @dataclass
 class StockChange:
-    position: int = 0
-    sku: int = 0
-    qty: int = 0
+    position: int = None
+    sku: int = None
+    qty: int = None
 
