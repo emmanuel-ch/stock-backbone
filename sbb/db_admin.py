@@ -113,7 +113,7 @@ class SBB_DBAdmin():
                               ])
 
 
-    def change_inventory(self, change_code: str, data: list[StockChange]) -> bool:
+    def change_inventory(self, change_code: str, data: list[StockChange | StockPosition]) -> bool:
         match change_code:
             case '101':  # Increase inventory because of PO-receipt
                 inventory_levels = self.get_inventory_level([item.sku for item in data])  # List[StockPosition, ...]
@@ -138,7 +138,9 @@ class SBB_DBAdmin():
                     self.update_inventory_level(inv_position_to_update)
 
                 return success
-
+            
+            case '201':  # Decrease inventory because of SO-issue
+                self.update_inventory_level(data)
     
     def set_inventory_level(self, new_positions: list[StockPosition]) -> int:
         self._cur.executemany("""
@@ -153,7 +155,7 @@ class SBB_DBAdmin():
         self._con.commit()
         return self._cur.rowcount
 
-    def update_inventory_level(self, updated_positions: list[StockChange]) -> None:
+    def update_inventory_level(self, position_changes: list[StockChange]) -> None:
         self._cur.executemany("""
                               UPDATE inventory SET
                                   qty = ?
@@ -161,7 +163,7 @@ class SBB_DBAdmin():
                               """,
                               [
                                   [position.qty, position.position]
-                                  for position in updated_positions
+                                  for position in position_changes
                               ])
 
     def get_inventory_level(self, skus: list[int]) -> list[StockPosition]:

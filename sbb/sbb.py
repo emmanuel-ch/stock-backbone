@@ -24,9 +24,10 @@ from sbb import db_admin
 from sbb.exceptions import (
     SBB_Exception, UserInputInvalid,
     EntityDoesntExist, SKUDoesntExist,
-    OrderQtyIncorrect, WrongOrderType
+    OrderQtyIncorrect, WrongOrderType,
+    NotEnoughStockToFullfillOrder
 )
-from sbb.sbb_objects import Order, OrderLine, StockChange
+from sbb.sbb_objects import Order, OrderLine, StockPosition, StockChange
 
 
 class StockBackbone():
@@ -55,7 +56,7 @@ class StockBackbone():
 
     def make_SO(self, customer_id: int, SO_lines: list[OrderLine]) -> int:
         return self._make_order(Order(
-            order_type='purchase',
+            order_type='sale',
             entity_id=customer_id,
             lines=[
                 OrderLine(sku=item[0], qty_ordered=item[1], qty_delivered=0)
@@ -117,6 +118,50 @@ class StockBackbone():
                 self._db.set_order_lines('delivered_qty', the_order.lines)
             else:
                 raise SBB_Exception('Unable to increase inventory')
+        else:
+            raise SBB_Exception(
+                'Unexpected exception: order-setting order not expected'
+                )
+    
+    def issue_SO(self, mode: str, order_id: int) -> bool:
+        if mode == 'ship-full':
+            the_order = self.get_order(order_id)
+            if the_order.order_type != 'sale':
+                raise WrongOrderType('sale', the_order.order_type)
+            
+            # Check if order is fulfillable
+            inv_levels = self._db.get_inventory_level([
+                item.sku for item in the_order.lines
+            ])
+            inv_changes = []
+            for ol in the_order.lines:
+                qty_change = ol.qty_ordered - ol.qty_delivered
+                stock_position = [
+                    stk for stk in inv_levels
+                    if stk.sku == ol.sku
+                    ]
+                if not stock_position:
+                    raise NotEnoughStockToFullfillOrder(
+                        order_id, ol.sku, qty_change, 0
+                    )
+                stock_position = stock_position[0]
+                qty_after = stock_position.qty - qty_change
+                if qty_after < 0:
+                    raise NotEnoughStockToFullfillOrder(
+                        order_id, ol.sku, qty_change, stock_position.qty
+                    )
+                inv_changes.append(StockPosition(
+                    position=stock_position.position,
+                    qty=qty_after
+                ))
+
+            # We have enough stock. Proceed
+            rem_inv = self._db.change_inventory('201', inv_changes)
+
+            if rem_inv:  # All lines on SO have been fulfilled
+                for ol in the_order.lines:
+                    ol.qty_delivered = ol.qty_ordered
+                self._db.set_order_lines('delivered_qty', the_order.lines)
         else:
             raise SBB_Exception(
                 'Unexpected exception: order-setting order not expected'

@@ -39,3 +39,9 @@ class WrongOrderType(SBB_Exception):
         msg = f'Expected order type {expected_order_type} but received order type {actual_order_type}'
         super().__init__(msg, *args, **kwargs)
 
+class NotEnoughStockToFullfillOrder(SBB_Exception):
+    """Not enough stock to fullfill sale order."""
+    def __init__(self, order_id: int, sku: int, qty_required: int, qty_avail, *args, **kwargs):
+        msg = f'Unable to fullfill sale {order_id=}, {sku=}: Required {qty_required=} but {qty_avail=}'
+        super().__init__(msg, *args, **kwargs)
+

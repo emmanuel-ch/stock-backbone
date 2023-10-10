@@ -5,7 +5,11 @@ Tests StockBackbone and StockBackbone_Admin methods
 import pytest
 
 from sbb.sbb import StockBackbone, validate_text_input
-from sbb.exceptions import EntityDoesntExist, SKUDoesntExist, OrderQtyIncorrect
+from sbb.exceptions import (
+    EntityDoesntExist, SKUDoesntExist, OrderQtyIncorrect,
+    NotEnoughStockToFullfillOrder
+)
+from sbb.sbb_objects import StockPosition
 
 
 @pytest.fixture
@@ -109,3 +113,47 @@ def test_make_SO_valid(dummy_sbb):
         ])
     assert isinstance(so_id, int)
 
+
+def test_issue_SO_stock_unavailable(dummy_sbb):
+    customer_id = dummy_sbb.create_customer('A customer')
+    sku = [dummy_sbb.create_sku(f'Product {chr(65+i)}') for i in range(3)]
+    so_id = dummy_sbb.make_SO(customer_id, [
+        (sku[0], 5),
+        (sku[1], 1),
+        (sku[2], 100)
+        ])
+    dummy_sbb._db.set_inventory_level([
+        StockPosition(sku=sku[0], qty=10)
+    ])
+
+    with pytest.raises(NotEnoughStockToFullfillOrder):
+        _ = dummy_sbb.issue_SO('ship-full', so_id)
+
+
+def test_issue_SO_stock_available(dummy_sbb):
+    customer_id = dummy_sbb.create_customer('A customer')
+    sku = [dummy_sbb.create_sku(f'Product {chr(65+i)}') for i in range(3)]
+    so_id = dummy_sbb.make_SO(customer_id, [
+        (sku[0], 5),
+        (sku[1], 1),
+        (sku[2], 100)
+        ])
+    dummy_sbb._db.set_inventory_level([
+        StockPosition(sku=sku[0], qty=10),
+        StockPosition(sku=sku[1], qty=1),
+        StockPosition(sku=sku[2], qty=100),
+    ])
+
+    _ = dummy_sbb.issue_SO('ship-full', so_id)
+    expected_inventory = [
+        StockPosition(sku=sku[0], qty=5),
+        StockPosition(sku=sku[1], qty=0),
+        StockPosition(sku=sku[2], qty=0),
+    ]
+
+    inv_level_after = dummy_sbb._db.get_inventory_level(sku[:])
+
+    assert all([
+        exp.is_like(inv_level_after[i])
+        for i, exp in enumerate(expected_inventory)
+    ])
