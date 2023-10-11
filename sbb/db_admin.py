@@ -1,5 +1,6 @@
 """ db_admin.py
-Administration of database. The methods below receive requests and interact with database.
+Administration of database.
+The methods below receive requests and interact with database.
 
 Class SBB_DBAdmin - methods:
     add_order
@@ -23,14 +24,9 @@ Class SBB_DBAdmin - methods:
     setup_db
 """
 
-from typing import Any
 import sqlite3
 
 from sbb.sbb_objects import Order, OrderLine, StockPosition, StockChange
-
-
-
-
 
 
 class SBB_DBAdmin():
@@ -82,19 +78,21 @@ class SBB_DBAdmin():
             order_type=order[0][1],
             entity_id=order[0][2],
             lines=[
-                OrderLine(position=ol[3], sku=ol[4], qty_ordered=ol[5], qty_delivered=ol[6])
+                OrderLine(position=ol[3], sku=ol[4], 
+                          qty_ordered=ol[5], qty_delivered=ol[6])
                 for ol in order
             ]
         )
 
     def add_order_lines(self, order_lines: list[OrderLine]) -> int:
         self._cur.executemany("""
-                              INSERT INTO order_line 
-                              (order_id, position, sku, qty_ordered, qty_delivered)
-                              VALUES (?, ?, ?, ?, ?);
+            INSERT INTO order_line 
+            (order_id, position, sku, qty_ordered, qty_delivered)
+            VALUES (?, ?, ?, ?, ?);
                               """,
                               [
-                                  [ol.order_id, ol.position, ol.sku, ol.qty_ordered, ol.qty_delivered]
+                                  [ol.order_id, ol.position, ol.sku,
+                                   ol.qty_ordered, ol.qty_delivered]
                                   for ol in order_lines
                               ])
         self._con.commit()
@@ -113,26 +111,36 @@ class SBB_DBAdmin():
                               ])
 
 
-    def change_inventory(self, change_code: str, data: list[StockChange | StockPosition]) -> bool:
+    def change_inventory(self, change_code: str,
+                         data: list[StockChange | StockPosition]) -> bool:
         match change_code:
             case '101':  # Increase inventory because of PO-receipt
-                inventory_levels = self.get_inventory_level([item.sku for item in data])  # List[StockPosition, ...]
-                inv_position_to_create = list()
+                inventory_levels = self.get_inventory_level(
+                    [item.sku for item in data]
+                )  # List[StockPosition, ...]
+                inv_pos_to_create = list()
                 inv_position_to_update = list()
                 for item in data:
-                    search_existing_inv = [inv for inv in inventory_levels if inv.sku == item.sku]
+                    search_existing_inv = [
+                        inv for inv in inventory_levels
+                        if inv.sku == item.sku
+                    ]
                     if len(search_existing_inv) == 1:
                         inv = search_existing_inv[0]
-                        inv_position_to_update.append(StockChange(position=inv.position, qty=inv.qty + item.qty))
+                        inv_position_to_update.append(StockChange(
+                            position=inv.position, qty=inv.qty + item.qty
+                        ))
                     elif len(search_existing_inv) == 1:
-                        raise Exception(f'Unexpected number of inventory positions')
+                        raise Exception(f'Unexpected number of inv. positions')
                     else:
-                        inv_position_to_create.append(StockPosition(sku=item.sku, qty=item.qty))
+                        inv_pos_to_create.append(StockPosition(
+                            sku=item.sku, qty=item.qty
+                        ))
                 
                 success = True
-                if len(inv_position_to_create) > 0:
-                    new_lines = self.set_inventory_level(inv_position_to_create)
-                    success = new_lines == len(inv_position_to_create)
+                if len(inv_pos_to_create) > 0:
+                    new_lines = self.set_inventory_level(inv_pos_to_create)
+                    success = new_lines == len(inv_pos_to_create)
                 
                 if len(inv_position_to_update) > 0:
                     self.update_inventory_level(inv_position_to_update)
@@ -155,7 +163,8 @@ class SBB_DBAdmin():
         self._con.commit()
         return self._cur.rowcount
 
-    def update_inventory_level(self, position_changes: list[StockChange]) -> None:
+    def update_inventory_level(self, 
+                               position_changes: list[StockChange]) -> None:
         self._cur.executemany("""
                               UPDATE inventory SET
                                   qty = ?
@@ -169,7 +178,10 @@ class SBB_DBAdmin():
     def get_inventory_level(self, skus: list[int]) -> list[StockPosition]:
         lines = (
             self._cur
-            .execute(f"SELECT position_id, sku, qty FROM inventory WHERE sku in ({','.join(len(skus)*['?'])})", skus)
+            .execute(f"""
+                     SELECT position_id, sku, qty FROM inventory
+                     WHERE sku in ({','.join(len(skus)*['?'])})""",
+                     skus)
             .fetchall()
         )
 
@@ -210,14 +222,18 @@ class SBB_DBAdmin():
         checker = (
             self
             ._cur
-            .execute("SELECT name FROM external_entity WHERE id=?", [(entity_id)])
+            .execute("SELECT name FROM external_entity WHERE id=?",
+                     [(entity_id)])
             .fetchone()
         )
         if checker is None:
             return False
         elif len(checker) == 1:
             return True
-        raise Exception(f'Unexpected exception: More than 1 external entity found for id: {entity_id}')
+        raise Exception((
+            f'Unexpected exception: ',
+            f'More than 1 external entity found for id: {entity_id}'
+            ))
     
     def is_sku(self, sku: int) -> bool:
         checker = (
@@ -242,7 +258,10 @@ class SBB_DBAdmin():
     def is_db_setup(self) -> bool:
         res = self._cur.execute("SELECT name FROM sqlite_master").fetchall()
         list_tables = [item[0] for item in res]
-        return all([expected_table in list_tables for expected_table in SBB_DBAdmin.DB_TABLES])
+        return all([
+            expected_table in list_tables
+            for expected_table in SBB_DBAdmin.DB_TABLES
+            ])
     
     def setup_db(self) -> None:
         # Orders

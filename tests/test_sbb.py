@@ -4,7 +4,7 @@ Tests StockBackbone and StockBackbone_Admin methods
 
 import pytest
 
-from sbb.sbb import StockBackbone, validate_text_input
+from sbb.sbb import StockBackbone
 from sbb.exceptions import (
     EntityDoesntExist, SKUDoesntExist, OrderQtyIncorrect,
     NotEnoughStockToFullfillOrder
@@ -28,7 +28,10 @@ def dummy_sbb():
     ('external entity name', 'not["acc]/ept@ble{*!?&#\+=}', False)
     ])
 def test_validate_text_input(field_type, test_input, expected_outcome):
-    assert validate_text_input(test_input, field_type) == expected_outcome
+    assert (
+        StockBackbone.validate_text_input(test_input, field_type)
+        == expected_outcome
+    )
 
 
 ##############################
